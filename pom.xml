@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>sc.fiji</groupId>
+		<artifactId>bigdataviewer</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>bigdataviewer_fiji</artifactId>
+
+	<name>BigDataViewer Fiji</name>
+	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>bigdataviewer-core</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.imglib2</groupId>
+			<artifactId>imglib2-meta</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.imglib2</groupId>
+			<artifactId>imglib2-ij</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.scif</groupId>
+			<artifactId>scifio</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>SPIM_Opener</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>sc.fiji</groupId>
+			<artifactId>SPIM_Registration</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>java3d</groupId>
+			<artifactId>vecmath</artifactId>
+			<version>1.3.1</version>
+		</dependency>
+	</dependencies>
+
+	<developers>
+		<developer>
+			<id>tpietzsch</id>
+			<name>Tobias Pietzsch</name>
+			<email>pietzsch@mpi-cbg.de</email>
+			<url></url>
+			<organization>MPI-CBG</organization>
+			<organizationUrl>http://www.mpi-cbg.de/</organizationUrl>
+			<roles>
+				<role>architect</role>
+				<role>developer</role>
+			</roles>
+			<timezone>+1</timezone>
+		</developer>
+	</developers>
+
+	<repositories>
+		<!-- NB: for project parent -->
+		<repository>
+			<id>imagej.releases</id>
+			<url>http://maven.imagej.net/content/repositories/releases</url>
+		</repository>
+		<repository>
+			<id>imagej.snapshots</id>
+			<url>http://maven.imagej.net/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
+
+	<scm>
+		<connection>scm:git:git://github.com/tpietzsch/spimviewer</connection>
+		<developerConnection>scm:git:git@github.com:tpietzsch/spimviewer</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/tpietzsch/spimviewer</url>
+	</scm>
+
+</project>
