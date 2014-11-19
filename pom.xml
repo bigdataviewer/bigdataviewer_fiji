@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0   http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -12,7 +9,7 @@
 	</parent>
 
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
@@ -49,7 +46,7 @@
 			<id>tpietzsch</id>
 			<name>Tobias Pietzsch</name>
 			<email>pietzsch@mpi-cbg.de</email>
-			<url></url>
+			<url />
 			<organization>MPI-CBG</organization>
 			<organizationUrl>http://www.mpi-cbg.de/</organizationUrl>
 			<roles>
@@ -70,7 +67,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/tpietzsch/spimviewer</connection>
 		<developerConnection>scm:git:git@github.com:tpietzsch/spimviewer</developerConnection>
-		<tag>HEAD</tag>
+		<tag>bigdataviewer_fiji-1.0.0</tag>
 		<url>https://github.com/tpietzsch/spimviewer</url>
 	</scm>
 
