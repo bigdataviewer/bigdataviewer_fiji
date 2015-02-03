@@ -283,16 +283,16 @@ public class ExportImagePlusPlugIn implements PlugIn
 		{
 			final GenericDialogPlus gd = new GenericDialogPlus( "Export for BigDataViewer" );
 
-			gd.addCheckbox( "manual mipmap setup", lastSetMipmapManual );
+			gd.addCheckbox( "manual_mipmap_setup", lastSetMipmapManual );
 			final Checkbox cManualMipmap = ( Checkbox ) gd.getCheckboxes().lastElement();
-			gd.addStringField( "Subsampling factors", lastSubsampling, 25 );
+			gd.addStringField( "Subsampling_factors", lastSubsampling, 25 );
 			final TextField tfSubsampling = ( TextField ) gd.getStringFields().lastElement();
-			gd.addStringField( "Hdf5 chunk sizes", lastChunkSizes, 25 );
+			gd.addStringField( "Hdf5_chunk_sizes", lastChunkSizes, 25 );
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
 
 			gd.addMessage( "" );
 			final String[] minMaxChoices = new String[] { "Use ImageJ's current min/max setting", "Compute min/max of the (hyper-)stack", "Use values specified below" };
-			gd.addChoice( "Value range", minMaxChoices, minMaxChoices[ lastMinMaxChoice ] );
+			gd.addChoice( "Value_range", minMaxChoices, minMaxChoices[ lastMinMaxChoice ] );
 			final Choice cMinMaxChoices = (Choice) gd.getChoices().lastElement();
 			gd.addNumericField( "Min", lastMin, 0 );
 			final TextField tfMin = (TextField) gd.getNumericFields().lastElement();
@@ -300,18 +300,18 @@ public class ExportImagePlusPlugIn implements PlugIn
 			final TextField tfMax = (TextField) gd.getNumericFields().lastElement();
 
 			gd.addMessage( "" );
-			gd.addCheckbox( "split hdf5", lastSplit );
+			gd.addCheckbox( "split_hdf5", lastSplit );
 			final Checkbox cSplit = ( Checkbox ) gd.getCheckboxes().lastElement();
-			gd.addNumericField( "timepoints per partition", lastTimepointsPerPartition, 0, 25, "" );
+			gd.addNumericField( "timepoints_per_partition", lastTimepointsPerPartition, 0, 25, "" );
 			final TextField tfSplitTimepoints = ( TextField ) gd.getNumericFields().lastElement();
-			gd.addNumericField( "setups per partition", lastSetupsPerPartition, 0, 25, "" );
+			gd.addNumericField( "setups_per_partition", lastSetupsPerPartition, 0, 25, "" );
 			final TextField tfSplitSetups = ( TextField ) gd.getNumericFields().lastElement();
 
 			gd.addMessage( "" );
-			gd.addCheckbox( "use deflate compression", lastDeflate );
+			gd.addCheckbox( "use_deflate_compression", lastDeflate );
 
 			gd.addMessage( "" );
-			PluginHelper.addSaveAsFileField( gd, "Export path", lastExportPath, 25 );
+			PluginHelper.addSaveAsFileField( gd, "Export_path", lastExportPath, 25 );
 
 //			gd.addMessage( "" );
 //			gd.addMessage( "This Plugin is developed by Tobias Pietzsch (pietzsch@mpi-cbg.de)\n" );
