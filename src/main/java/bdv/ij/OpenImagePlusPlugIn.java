@@ -6,6 +6,7 @@ import java.util.HashMap;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
+import bdv.img.imagestack.ImageStackImageLoader;
 import bdv.img.virtualstack.VirtualStackImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
@@ -24,22 +25,8 @@ import mpicbg.spim.data.sequence.Channel;
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
-import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.FinalDimensions;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.basictypeaccess.array.ArrayDataAccess;
-import net.imglib2.img.basictypeaccess.array.ByteArray;
-import net.imglib2.img.basictypeaccess.array.FloatArray;
-import net.imglib2.img.basictypeaccess.array.IntArray;
-import net.imglib2.img.basictypeaccess.array.ShortArray;
-import net.imglib2.img.planar.PlanarImg;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.NativeType;
-import net.imglib2.type.numeric.ARGBType;
-import net.imglib2.type.numeric.NumericType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
-import net.imglib2.type.numeric.real.FloatType;
 
 /**
  * ImageJ plugin to show the current image in BigDataViewer.
@@ -135,17 +122,17 @@ public class OpenImagePlusPlugIn implements PlugIn
 			switch ( imp.getType() )
 			{
 			case ImagePlus.GRAY8:
-				imgLoader = ImagePlusImgLoader.createUnsignedByteInstance( imp );
+				imgLoader = ImageStackImageLoader.createUnsignedByteInstance( imp );
 				break;
 			case ImagePlus.GRAY16:
-				imgLoader = ImagePlusImgLoader.createUnsignedShortInstance( imp );
+				imgLoader = ImageStackImageLoader.createUnsignedShortInstance( imp );
 				break;
 			case ImagePlus.GRAY32:
-				imgLoader = ImagePlusImgLoader.createFloatInstance( imp );
+				imgLoader = ImageStackImageLoader.createFloatInstance( imp );
 				break;
 			case ImagePlus.COLOR_RGB:
 			default:
-				imgLoader = ImagePlusImgLoader.createARGBInstance( imp );
+				imgLoader = ImageStackImageLoader.createARGBInstance( imp );
 				break;
 			}
 		}
@@ -187,121 +174,6 @@ public class OpenImagePlusPlugIn implements PlugIn
 		catch ( final SpimDataException e )
 		{
 			throw new RuntimeException( e );
-		}
-	}
-
-	private static abstract class ImagePlusImgLoader< T extends NumericType< T > & NativeType< T >, A extends ArrayDataAccess< A > > implements BasicImgLoader< T >
-	{
-		private final T type;
-
-		private final ImagePlus imp;
-
-		private final long[] dim;
-
-		public ImagePlusImgLoader( final T type, final ImagePlus imp )
-		{
-			this.type = type;
-			this.imp = imp;
-			this.dim = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
-		}
-
-		protected abstract A wrap( Object array );
-
-		protected abstract void linkType( PlanarImg< T, A > img );
-
-		@Override
-		public RandomAccessibleInterval< T > getImage( final ViewId view )
-		{
-			return new PlanarImg< T, A >( dim, type.getEntitiesPerPixel() )
-			{
-				private PlanarImg< T, A > init()
-				{
-					final int channel = view.getViewSetupId() + 1;
-					final int frame = view.getTimePointId() + 1;
-					for ( int slice = 1; slice <= dim[ 2 ]; ++slice )
-						mirror.set( slice - 1, wrap( imp.getStack().getPixels( imp.getStackIndex( channel, slice, frame ) ) ) );
-					linkType( this );
-					return this;
-				}
-			}.init();
-		}
-
-		@Override
-		public T getImageType()
-		{
-			return type;
-		}
-
-		public static ImagePlusImgLoader< UnsignedByteType, ByteArray > createUnsignedByteInstance( final ImagePlus imp )
-		{
-			return new ImagePlusImgLoader< UnsignedByteType, ByteArray >( new UnsignedByteType(), imp )
-			{
-				@Override
-				protected ByteArray wrap( final Object array )
-				{
-					return new ByteArray( ( byte[] ) array );
-				}
-
-				@Override
-				protected void linkType( final PlanarImg< UnsignedByteType, ByteArray > img )
-				{
-					img.setLinkedType( new UnsignedByteType( img ) );
-				}
-			};
-		}
-
-		public static ImagePlusImgLoader< UnsignedShortType, ShortArray > createUnsignedShortInstance( final ImagePlus imp )
-		{
-			return new ImagePlusImgLoader< UnsignedShortType, ShortArray >( new UnsignedShortType(), imp )
-			{
-				@Override
-				protected ShortArray wrap( final Object array )
-				{
-					return new ShortArray( ( short[] ) array );
-				}
-
-				@Override
-				protected void linkType( final PlanarImg< UnsignedShortType, ShortArray > img )
-				{
-					img.setLinkedType( new UnsignedShortType( img ) );
-				}
-			};
-		}
-
-		public static ImagePlusImgLoader< FloatType, FloatArray > createFloatInstance( final ImagePlus imp )
-		{
-			return new ImagePlusImgLoader< FloatType, FloatArray >( new FloatType(), imp )
-			{
-				@Override
-				protected FloatArray wrap( final Object array )
-				{
-					return new FloatArray( ( float[] ) array );
-				}
-
-				@Override
-				protected void linkType( final PlanarImg< FloatType, FloatArray > img )
-				{
-					img.setLinkedType( new FloatType( img ) );
-				}
-			};
-		}
-
-		public static ImagePlusImgLoader< ARGBType, IntArray > createARGBInstance( final ImagePlus imp )
-		{
-			return new ImagePlusImgLoader< ARGBType, IntArray >( new ARGBType(), imp )
-			{
-				@Override
-				protected IntArray wrap( final Object array )
-				{
-					return new IntArray( ( int[] ) array );
-				}
-
-				@Override
-				protected void linkType( final PlanarImg< ARGBType, IntArray > img )
-				{
-					img.setLinkedType( new ARGBType( img ) );
-				}
-			};
 		}
 	}
 }
