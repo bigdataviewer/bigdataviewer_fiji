@@ -42,46 +42,19 @@ public class BigDataBrowserPlugin implements PlugIn
 		}
 
 		String serverUrl = "http://scicomp-pc-1-10gb:8070";
-//		Clipboard access for getting bigdataserver url
-//		Clipboard c = Toolkit.getDefaultToolkit().getSystemClipboard();
-//		Transferable t = c.getContents( this );
-//		if ( t != null )
-//		{
-//			try
-//			{
-//				serverUrl = ( String ) t.getTransferData( DataFlavor.stringFlavor );
-//			}
-//			catch ( Exception e )
-//			{
-//				e.printStackTrace();
-//			}
-//
-//			if ( !serverUrl.startsWith( "http://" ) )
-//			{
-//				serverUrl = "http://" + serverUrl;
-//			}
-//		}
 
-		boolean ret;
-		do
-		{
-			Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
-					JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
+		Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
+				JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
 
-			if ( remoteUrl == null )
-			{
-				IJ.showMessage( "The given URL is null. Please, check it again." );
-				break;
-			}
+		if ( remoteUrl == null )
+			return;
 
-			ArrayList< String > nameList = new ArrayList< String >();
-			ret = getDatasetList( remoteUrl.toString(), nameList );
-			if ( !ret )
-				IJ.showMessage( "The server is not available." );
-			else
-				createDatasetListUI( nameList.toArray() );
-
-		} while ( !ret );
+		ArrayList< String > nameList = new ArrayList< String >();
+		boolean ret = getDatasetList( remoteUrl.toString(), nameList );
+		if ( !ret )
+			IJ.showMessage( "The server is not available." );
+		else
+			createDatasetListUI( nameList.toArray() );
 
 	}
 
@@ -189,7 +162,7 @@ public class BigDataBrowserPlugin implements PlugIn
 	public class ThumbnailListRenderer extends DefaultListCellRenderer
 	{
 
-		Font font = new Font( "helvitica", Font.BOLD, 12 );
+		Font font = new Font( "helvetica", Font.BOLD, 12 );
 
 		@Override
 		public Component getListCellRendererComponent(
