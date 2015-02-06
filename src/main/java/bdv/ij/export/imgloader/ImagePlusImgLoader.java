@@ -72,7 +72,7 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 
 	protected final BasicImgLoader< T > loader;
 
-	VolatileGlobalCellCache< ? > loadercache;
+	protected VolatileGlobalCellCache< ? > loadercache;
 
 	protected double impMin;
 
@@ -126,6 +126,16 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 			impMax = max;
 			System.out.println( "SET" );
 			System.out.println( impMin + "  " + impMax );
+		}
+	}
+
+	public void clearCache()
+	{
+		if ( loadercache != null )
+		{
+			loadercache.clearCache();
+			System.runFinalization();
+			System.gc();
 		}
 	}
 

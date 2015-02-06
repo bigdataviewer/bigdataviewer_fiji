@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -28,13 +27,14 @@ import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
 import bdv.export.SubTaskProgressWriter;
 import bdv.export.WriteSequenceToHdf5;
+import bdv.export.WriteSequenceToHdf5.LoopbackHeuristic;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.export.imgloader.ImagePlusImgLoader.MinMaxOption;
 import bdv.ij.util.PluginHelper;
@@ -116,7 +116,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 		progressWriter.out().println( "starting export..." );
 
 		// create ImgLoader wrapping the image
-		final BasicImgLoader< UnsignedShortType > imgLoader;
+		final ImagePlusImgLoader< ? > imgLoader;
 		switch ( imp.getType() )
 		{
 		case ImagePlus.GRAY8:
@@ -157,6 +157,62 @@ public class ExportImagePlusPlugIn implements PlugIn
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
 
+		// TODO: explain & test
+		final boolean isVirtual = imp.getStack().isVirtual();
+		final long planeSizeInBytes = imp.getWidth() * imp.getHeight() * imp.getBytesPerPixel();
+		final long ijMaxMemory = IJ.maxMemory();
+		final LoopbackHeuristic loopbackHeuristic = new LoopbackHeuristic()
+		{
+			@Override
+			public boolean decide( final RandomAccessibleInterval< ? > originalImg, final int[] factorsToOriginalImg, final int previousLevel, final int[] factorsToPreviousLevel, final int[] chunkSize )
+			{
+				if ( previousLevel < 0 )
+					return false;
+
+				if ( isVirtual )
+				{
+					final long requiredCacheSize = planeSizeInBytes * factorsToOriginalImg[ 2 ] * chunkSize[ 2 ];
+					System.out.println( "requiredCacheSize = " + planeSizeInBytes + " * " + factorsToOriginalImg[ 2 ] + " * " + chunkSize[ 2 ] + " = " + requiredCacheSize );
+					System.out.println( "ijMaxMemory = " + ijMaxMemory );
+					if ( requiredCacheSize > ijMaxMemory / 3 )
+					{
+						System.out.println( "--> use loopback" );
+						return true;
+					}
+				}
+				else
+				{
+					if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+						return true;
+				}
+
+				return false;
+			}
+
+			@Override
+			public void afterEachPlane()
+			{
+				if ( isVirtual )
+				{
+					final long free = Runtime.getRuntime().freeMemory();
+					final long total = Runtime.getRuntime().totalMemory();
+					final long max = Runtime.getRuntime().maxMemory();
+					final long actuallyFree = max - total + free;
+
+					System.out.println( "freeMemory = " + ( free / 1024 / 1024 ) + "MB" );
+					System.out.println( "freeMemory (corrected) = " + ( actuallyFree / 1024 / 1024 ) + "MB" );
+					System.out.println( "totalMemory = " + ( total / 1024 / 1024 ) + "MB" );
+					System.out.println( "maxMemory = " + ( max / 1024 / 1024 ) + "MB" );
+
+					if ( actuallyFree < max / 2 )
+					{
+						System.out.println( "clearCache" );
+						imgLoader.clearCache();
+					}
+				}
+			}
+		};
+
 		final ArrayList< Partition > partitions;
 		if ( params.split )
 		{
@@ -168,14 +224,14 @@ public class ExportImagePlusPlugIn implements PlugIn
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progressWriter, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, loopbackHeuristic, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( seq, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
 			partitions = null;
-			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, loopbackHeuristic, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 		}
 
 		// write xml sequence description
