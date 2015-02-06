@@ -157,7 +157,13 @@ public class ExportImagePlusPlugIn implements PlugIn
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
 
-		// TODO: explain & test
+		// LoopBackHeuristic:
+		// - If saving more than 8x on pixel reads use the loopback image over
+		//   original image
+		// - For virtual stacks also consider the cache size that would be
+		//   required for all original planes contributing to a "plane of
+		//   blocks" at the current level. If this is more than 1/4 of
+		//   available memory, use the loopback image.
 		final boolean isVirtual = imp.getStack().isVirtual();
 		final long planeSizeInBytes = imp.getWidth() * imp.getHeight() * imp.getBytesPerPixel();
 		final long ijMaxMemory = IJ.maxMemory();
@@ -169,20 +175,13 @@ public class ExportImagePlusPlugIn implements PlugIn
 				if ( previousLevel < 0 )
 					return false;
 
+				if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+					return true;
+
 				if ( isVirtual )
 				{
 					final long requiredCacheSize = planeSizeInBytes * factorsToOriginalImg[ 2 ] * chunkSize[ 2 ];
-					System.out.println( "requiredCacheSize = " + planeSizeInBytes + " * " + factorsToOriginalImg[ 2 ] + " * " + chunkSize[ 2 ] + " = " + requiredCacheSize );
-					System.out.println( "ijMaxMemory = " + ijMaxMemory );
-					if ( requiredCacheSize > ijMaxMemory / 3 )
-					{
-						System.out.println( "--> use loopback" );
-						return true;
-					}
-				}
-				else
-				{
-					if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+					if ( requiredCacheSize > ijMaxMemory / 4 )
 						return true;
 				}
 
@@ -199,16 +198,8 @@ public class ExportImagePlusPlugIn implements PlugIn
 					final long max = Runtime.getRuntime().maxMemory();
 					final long actuallyFree = max - total + free;
 
-					System.out.println( "freeMemory = " + ( free / 1024 / 1024 ) + "MB" );
-					System.out.println( "freeMemory (corrected) = " + ( actuallyFree / 1024 / 1024 ) + "MB" );
-					System.out.println( "totalMemory = " + ( total / 1024 / 1024 ) + "MB" );
-					System.out.println( "maxMemory = " + ( max / 1024 / 1024 ) + "MB" );
-
 					if ( actuallyFree < max / 2 )
-					{
-						System.out.println( "clearCache" );
 						imgLoader.clearCache();
-					}
 				}
 			}
 		};
