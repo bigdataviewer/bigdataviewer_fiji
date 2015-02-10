@@ -315,7 +315,7 @@ public class CellVoyagerDataExporter
 		 * Write to HDF5
 		 */
 
-		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions, chunks, true, hdf5File, null, progressWriter );
+		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions, chunks, true, hdf5File, null, null, progressWriter );
 
 		/*
 		 * write XML sequence description

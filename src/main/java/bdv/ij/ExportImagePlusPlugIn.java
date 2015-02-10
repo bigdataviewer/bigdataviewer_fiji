@@ -34,6 +34,7 @@ import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
 import bdv.export.SubTaskProgressWriter;
 import bdv.export.WriteSequenceToHdf5;
+import bdv.export.WriteSequenceToHdf5.AfterEachPlane;
 import bdv.export.WriteSequenceToHdf5.LoopbackHeuristic;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.export.imgloader.ImagePlusImgLoader.MinMaxOption;
@@ -187,11 +188,14 @@ public class ExportImagePlusPlugIn implements PlugIn
 
 				return false;
 			}
+		};
 
+		final AfterEachPlane afterEachPlane = new AfterEachPlane()
+		{
 			@Override
-			public void afterEachPlane()
+			public void afterEachPlane( final boolean usedLoopBack )
 			{
-				if ( isVirtual )
+				if ( !usedLoopBack && isVirtual )
 				{
 					final long free = Runtime.getRuntime().freeMemory();
 					final long total = Runtime.getRuntime().totalMemory();
@@ -202,6 +206,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 						imgLoader.clearCache();
 				}
 			}
+
 		};
 
 		final ArrayList< Partition > partitions;
@@ -215,14 +220,14 @@ public class ExportImagePlusPlugIn implements PlugIn
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progressWriter, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, loopbackHeuristic, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, loopbackHeuristic, afterEachPlane, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( seq, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
 			partitions = null;
-			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, loopbackHeuristic, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, loopbackHeuristic, afterEachPlane, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 		}
 
 		// write xml sequence description
