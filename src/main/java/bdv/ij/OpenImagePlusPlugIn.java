@@ -3,7 +3,6 @@ package bdv.ij;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.imagestack.ImageStackImageLoader;
@@ -11,11 +10,17 @@ import bdv.img.virtualstack.VirtualStackImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.WrapBasicImgLoader;
+import bdv.tools.brightness.ConverterSetup;
+import bdv.tools.brightness.SetupAssignments;
+import bdv.viewer.DisplayMode;
+import bdv.viewer.VisibilityAndGrouping;
+import ij.CompositeImage;
 import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
+import ij.process.LUT;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
@@ -27,6 +32,7 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.type.numeric.ARGBType;
 
 /**
  * ImageJ plugin to show the current image in BigDataViewer.
@@ -169,11 +175,48 @@ public class OpenImagePlusPlugIn implements PlugIn
 
 		try
 		{
-			new BigDataViewer( spimData, "BigDataViewer", new ProgressWriterIJ() );
+			final BigDataViewer bdv = new BigDataViewer( spimData, "BigDataViewer", new ProgressWriterIJ() );
+			final SetupAssignments sa = bdv.getSetupAssignments();
+			final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
+			if ( imp.isComposite() )
+				transferChannelSettings( ( CompositeImage ) imp, sa, vg );
+			else if ( imp.getType() == ImagePlus.COLOR_RGB )
+				transferSettingsRGB( imp, sa );
 		}
 		catch ( final SpimDataException e )
 		{
 			throw new RuntimeException( e );
 		}
+	}
+
+	protected void transferChannelSettings( final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
+	{
+		final int nChannels = ci.getNChannels();
+		final int mode = ci.getCompositeMode();
+		final boolean transferColor = mode == IJ.COMPOSITE || mode == IJ.COLOR;
+		for ( int c = 0; c < nChannels; ++c )
+		{
+			final LUT lut = ci.getChannelLut( c + 1 );
+			final ConverterSetup setup = setupAssignments.getConverterSetups().get( c );
+			if ( transferColor )
+				setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
+			setup.setDisplayRange( lut.min, lut.max );
+		}
+		if ( mode == IJ.COMPOSITE )
+		{
+			final boolean[] activeChannels = ci.getActiveChannels();
+			visibility.setDisplayMode( DisplayMode.FUSED );
+			for ( int i = 0; i < activeChannels.length; ++i )
+				visibility.setSourceActive( i, activeChannels[ i ] );
+		}
+		else
+			visibility.setDisplayMode( DisplayMode.SINGLE );
+		visibility.setCurrentSource( ci.getChannel() - 1 );
+	}
+
+	protected void transferSettingsRGB( final ImagePlus imp, final SetupAssignments setupAssignments )
+	{
+		final ConverterSetup setup = setupAssignments.getConverterSetups().get( 0 );
+		setup.setDisplayRange( imp.getDisplayRangeMin(), imp.getDisplayRangeMax() );
 	}
 }
