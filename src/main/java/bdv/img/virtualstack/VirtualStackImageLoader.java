@@ -8,6 +8,7 @@ import net.imglib2.img.NativeImg;
 import net.imglib2.img.basictypeaccess.volatiles.VolatileAccess;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileByteArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileFloatArray;
+import net.imglib2.img.basictypeaccess.volatiles.array.VolatileIntArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
@@ -37,7 +38,7 @@ import bdv.img.cache.VolatileImgCells.CellCache;
  * Use {@link #createFloatInstance(ImagePlus)},
  * {@link #createUnsignedByteInstance(ImagePlus)} or
  * {@link #createUnsignedShortInstance(ImagePlus)} depending on the ImagePlus
- * pixel type. ARGB is currently not supported.
+ * pixel type.
  *
  * When {@link #getImage(ViewId) loading images}, the provided setup id is used
  * as the channel index of the {@link ImagePlus}, the provided timepoint id is
@@ -108,6 +109,25 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 			protected void linkVolatileType( final CachedCellImg< VolatileUnsignedByteType, VolatileByteArray > img )
 			{
 				img.setLinkedType( new VolatileUnsignedByteType( img ) );
+			}
+		};
+	}
+
+	public static VirtualStackImageLoader< ARGBType, VolatileARGBType, VolatileIntArray > createARGBInstance( final ImagePlus imp )
+	{
+		return new VirtualStackImageLoader< ARGBType, VolatileARGBType, VolatileIntArray >(
+				imp, new VirtualStackVolatileARGBArrayLoader( imp ), new ARGBType(), new VolatileARGBType() )
+		{
+			@Override
+			protected void linkType( final CachedCellImg< ARGBType, VolatileIntArray > img )
+			{
+				img.setLinkedType( new ARGBType( img ) );
+			}
+
+			@Override
+			protected void linkVolatileType( final CachedCellImg< VolatileARGBType, VolatileIntArray > img )
+			{
+				img.setLinkedType( new VolatileARGBType( img ) );
 			}
 		};
 	}

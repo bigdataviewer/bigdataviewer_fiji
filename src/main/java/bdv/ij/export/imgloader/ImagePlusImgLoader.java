@@ -12,6 +12,8 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
+import bdv.img.cache.VolatileGlobalCellCache;
+import bdv.img.imagestack.ImageStackImageLoader;
 import bdv.img.virtualstack.VirtualStackImageLoader;
 
 /**
@@ -40,39 +42,56 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 	{
 		if( imp.getType() != ImagePlus.GRAY8 )
 			throw new RuntimeException( "expected ImagePlus type GRAY8" );
-		return new ImagePlusImgLoader< UnsignedByteType >( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
+		if ( imp.getStack() != null && imp.getStack().isVirtual() )
+			return new ImagePlusImgLoader< UnsignedByteType >( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
+		else
+			return new ImagePlusImgLoader< UnsignedByteType >( imp, ImageStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
 	}
 
 	public static ImagePlusImgLoader< UnsignedShortType > createGray16( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY16 )
 			throw new RuntimeException( "expected ImagePlus type GRAY16" );
-		return new ImagePlusImgLoader< UnsignedShortType >( imp, VirtualStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
+		if ( imp.getStack() != null && imp.getStack().isVirtual() )
+			return new ImagePlusImgLoader< UnsignedShortType >( imp, VirtualStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
+		else
+			return new ImagePlusImgLoader< UnsignedShortType >( imp, ImageStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
 	}
 
 	public static ImagePlusImgLoader< FloatType > createGray32( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY32 )
 			throw new RuntimeException( "expected ImagePlus type GRAY32" );
-		return new ImagePlusImgLoader< FloatType >( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
+		if ( imp.getStack() != null && imp.getStack().isVirtual() )
+			return new ImagePlusImgLoader< FloatType >( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
+		else
+			return new ImagePlusImgLoader< FloatType >( imp, ImageStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
 	}
 
 	protected final ImagePlus imp;
 
-	protected final VirtualStackImageLoader< T, ?, ? > loader;
+	protected final BasicImgLoader< T > loader;
+
+	protected VolatileGlobalCellCache< ? > loadercache;
 
 	protected double impMin;
 
 	protected double impMax;
 
+	@SuppressWarnings( "unchecked" )
 	protected ImagePlusImgLoader( final ImagePlus imp,
-			final VirtualStackImageLoader< T, ?, ? > loader,
+			final BasicImgLoader< T > loader,
 			final MinMaxOption minMaxOption,
 			final double min,
 			final double max )
 	{
 		this.imp = imp;
 		this.loader = loader;
+
+		if ( loader instanceof VirtualStackImageLoader )
+			this.loadercache = ( ( VirtualStackImageLoader< T, ?, ? > ) loader ).getCache();
+		else
+			this.loadercache = null;
 
 		if ( minMaxOption == MinMaxOption.COMPUTE )
 		{
@@ -88,7 +107,8 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 					ComputeMinMax.computeMinMax( loader.getImage( new ViewId( t, s ) ), minT, maxT );
 					impMin = Math.min( minT.getRealDouble(), impMin );
 					impMax = Math.max( maxT.getRealDouble(), impMax );
-					loader.getCache().clearCache();
+					if ( loadercache != null )
+						loadercache.clearCache();
 				}
 			System.out.println( "COMPUTE" );
 			System.out.println( impMin + "  " + impMax );
@@ -109,10 +129,21 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 		}
 	}
 
+	public void clearCache()
+	{
+		if ( loadercache != null )
+		{
+			loadercache.clearCache();
+			System.runFinalization();
+			System.gc();
+		}
+	}
+
 	@Override
 	public RandomAccessibleInterval< UnsignedShortType > getImage( final ViewId view )
 	{
-		loader.getCache().clearCache();
+		if ( loadercache != null )
+			loadercache.clearCache();
 		final RandomAccessibleInterval< T > img = loader.getImage( view );
 		return Converters.convert( img, new RealUnsignedShortConverter< T >( impMin, impMax ), new UnsignedShortType() );
 	}
