@@ -54,7 +54,7 @@ public class BigDataBrowserPlugin implements PlugIn
 		if ( !ret )
 			IJ.showMessage( "The server is not available." );
 		else
-			createDatasetListUI( nameList.toArray() );
+			createDatasetListUI( remoteUrl.toString(), nameList.toArray() );
 
 	}
 
@@ -122,7 +122,7 @@ public class BigDataBrowserPlugin implements PlugIn
 		return true;
 	}
 
-	private void createDatasetListUI( Object[] values )
+	private void createDatasetListUI( String remoteUrl, Object[] values )
 	{
 		JList list = new JList( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
@@ -149,9 +149,10 @@ public class BigDataBrowserPlugin implements PlugIn
 		} );
 
 		JScrollPane scroll = new JScrollPane( list );
-		scroll.setPreferredSize( new Dimension( 300, 400 ) );
+		scroll.setPreferredSize( new Dimension( 600, 800 ) );
 
 		JFrame frame = new JFrame();
+		frame.setTitle( "BigDataServer Browser - " + remoteUrl );
 		frame.add( scroll );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 		frame.pack();
