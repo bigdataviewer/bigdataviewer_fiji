@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -28,13 +27,15 @@ import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
 import bdv.export.SubTaskProgressWriter;
 import bdv.export.WriteSequenceToHdf5;
+import bdv.export.WriteSequenceToHdf5.AfterEachPlane;
+import bdv.export.WriteSequenceToHdf5.LoopbackHeuristic;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.export.imgloader.ImagePlusImgLoader.MinMaxOption;
 import bdv.ij.util.PluginHelper;
@@ -116,7 +117,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 		progressWriter.out().println( "starting export..." );
 
 		// create ImgLoader wrapping the image
-		final BasicImgLoader< UnsignedShortType > imgLoader;
+		final ImagePlusImgLoader< ? > imgLoader;
 		switch ( imp.getType() )
 		{
 		case ImagePlus.GRAY8:
@@ -157,6 +158,57 @@ public class ExportImagePlusPlugIn implements PlugIn
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
 
+		// LoopBackHeuristic:
+		// - If saving more than 8x on pixel reads use the loopback image over
+		//   original image
+		// - For virtual stacks also consider the cache size that would be
+		//   required for all original planes contributing to a "plane of
+		//   blocks" at the current level. If this is more than 1/4 of
+		//   available memory, use the loopback image.
+		final boolean isVirtual = imp.getStack().isVirtual();
+		final long planeSizeInBytes = imp.getWidth() * imp.getHeight() * imp.getBytesPerPixel();
+		final long ijMaxMemory = IJ.maxMemory();
+		final LoopbackHeuristic loopbackHeuristic = new LoopbackHeuristic()
+		{
+			@Override
+			public boolean decide( final RandomAccessibleInterval< ? > originalImg, final int[] factorsToOriginalImg, final int previousLevel, final int[] factorsToPreviousLevel, final int[] chunkSize )
+			{
+				if ( previousLevel < 0 )
+					return false;
+
+				if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+					return true;
+
+				if ( isVirtual )
+				{
+					final long requiredCacheSize = planeSizeInBytes * factorsToOriginalImg[ 2 ] * chunkSize[ 2 ];
+					if ( requiredCacheSize > ijMaxMemory / 4 )
+						return true;
+				}
+
+				return false;
+			}
+		};
+
+		final AfterEachPlane afterEachPlane = new AfterEachPlane()
+		{
+			@Override
+			public void afterEachPlane( final boolean usedLoopBack )
+			{
+				if ( !usedLoopBack && isVirtual )
+				{
+					final long free = Runtime.getRuntime().freeMemory();
+					final long total = Runtime.getRuntime().totalMemory();
+					final long max = Runtime.getRuntime().maxMemory();
+					final long actuallyFree = max - total + free;
+
+					if ( actuallyFree < max / 2 )
+						imgLoader.clearCache();
+				}
+			}
+
+		};
+
 		final ArrayList< Partition > partitions;
 		if ( params.split )
 		{
@@ -168,14 +220,14 @@ public class ExportImagePlusPlugIn implements PlugIn
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progressWriter, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, loopbackHeuristic, afterEachPlane, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( seq, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
 			partitions = null;
-			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, loopbackHeuristic, afterEachPlane, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 		}
 
 		// write xml sequence description
@@ -283,16 +335,16 @@ public class ExportImagePlusPlugIn implements PlugIn
 		{
 			final GenericDialogPlus gd = new GenericDialogPlus( "Export for BigDataViewer" );
 
-			gd.addCheckbox( "manual mipmap setup", lastSetMipmapManual );
+			gd.addCheckbox( "manual_mipmap_setup", lastSetMipmapManual );
 			final Checkbox cManualMipmap = ( Checkbox ) gd.getCheckboxes().lastElement();
-			gd.addStringField( "Subsampling factors", lastSubsampling, 25 );
+			gd.addStringField( "Subsampling_factors", lastSubsampling, 25 );
 			final TextField tfSubsampling = ( TextField ) gd.getStringFields().lastElement();
-			gd.addStringField( "Hdf5 chunk sizes", lastChunkSizes, 25 );
+			gd.addStringField( "Hdf5_chunk_sizes", lastChunkSizes, 25 );
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
 
 			gd.addMessage( "" );
 			final String[] minMaxChoices = new String[] { "Use ImageJ's current min/max setting", "Compute min/max of the (hyper-)stack", "Use values specified below" };
-			gd.addChoice( "Value range", minMaxChoices, minMaxChoices[ lastMinMaxChoice ] );
+			gd.addChoice( "Value_range", minMaxChoices, minMaxChoices[ lastMinMaxChoice ] );
 			final Choice cMinMaxChoices = (Choice) gd.getChoices().lastElement();
 			gd.addNumericField( "Min", lastMin, 0 );
 			final TextField tfMin = (TextField) gd.getNumericFields().lastElement();
@@ -300,18 +352,18 @@ public class ExportImagePlusPlugIn implements PlugIn
 			final TextField tfMax = (TextField) gd.getNumericFields().lastElement();
 
 			gd.addMessage( "" );
-			gd.addCheckbox( "split hdf5", lastSplit );
+			gd.addCheckbox( "split_hdf5", lastSplit );
 			final Checkbox cSplit = ( Checkbox ) gd.getCheckboxes().lastElement();
-			gd.addNumericField( "timepoints per partition", lastTimepointsPerPartition, 0, 25, "" );
+			gd.addNumericField( "timepoints_per_partition", lastTimepointsPerPartition, 0, 25, "" );
 			final TextField tfSplitTimepoints = ( TextField ) gd.getNumericFields().lastElement();
-			gd.addNumericField( "setups per partition", lastSetupsPerPartition, 0, 25, "" );
+			gd.addNumericField( "setups_per_partition", lastSetupsPerPartition, 0, 25, "" );
 			final TextField tfSplitSetups = ( TextField ) gd.getNumericFields().lastElement();
 
 			gd.addMessage( "" );
-			gd.addCheckbox( "use deflate compression", lastDeflate );
+			gd.addCheckbox( "use_deflate_compression", lastDeflate );
 
 			gd.addMessage( "" );
-			PluginHelper.addSaveAsFileField( gd, "Export path", lastExportPath, 25 );
+			PluginHelper.addSaveAsFileField( gd, "Export_path", lastExportPath, 25 );
 
 //			gd.addMessage( "" );
 //			gd.addMessage( "This Plugin is developed by Tobias Pietzsch (pietzsch@mpi-cbg.de)\n" );

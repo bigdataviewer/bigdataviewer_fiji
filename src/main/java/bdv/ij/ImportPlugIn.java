@@ -25,6 +25,8 @@ import mpicbg.spim.data.sequence.ViewId;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
+import bdv.ViewerImgLoader;
+import bdv.img.hdf5.Hdf5ImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
@@ -39,6 +41,7 @@ public class ImportPlugIn implements PlugIn
 	public static String xmlFile = "";
 	public static int timepoint = 0;
 	public static int setup = 0;
+	public static int mipmap = 0;
 	public static boolean openAsVirtualStack = false;
 
 	private static SequenceDescriptionMinimal openSequence( final String xmlFilename ) throws SpimDataException
@@ -65,6 +68,9 @@ public class ImportPlugIn implements PlugIn
 		gd.addSlider( "setup index", 0, 0, setup );
 		final Scrollbar slSetup = (Scrollbar) gd.getSliders().lastElement();
 		final TextField tfSetup = (TextField) gd.getNumericFields().lastElement();
+		gd.addSlider( "resolution level", 0, 0, setup );
+		final Scrollbar slMipmap = (Scrollbar) gd.getSliders().lastElement();
+		final TextField tfMipmap = (TextField) gd.getNumericFields().lastElement();
 		gd.addCheckbox( "open as virtual stack", openAsVirtualStack );
 		final Checkbox cVirtual = (Checkbox) gd.getCheckboxes().lastElement();
 
@@ -73,6 +79,7 @@ public class ImportPlugIn implements PlugIn
 			void check( final String xmlFilename )
 			{
 				boolean enable = false;
+				boolean enableMipmap = false;
 				try
 				{
 					final SequenceDescriptionMinimal seq = openSequence( xmlFilename );
@@ -84,6 +91,19 @@ public class ImportPlugIn implements PlugIn
 						slTimepoint.setMaximum( numTimepoints );
 						slSetup.setMaximum( numSetups );
 						enable = true;
+
+						if ( seq.getImgLoader() instanceof ViewerImgLoader )
+						{
+							final ViewerImgLoader< ?, ? > vil = ( ViewerImgLoader< ?, ? > ) seq.getImgLoader();
+							final int numMipmapLevels = vil.numMipmapLevels( seq.getViewSetupsOrdered().get( 0 ).getId() );
+
+							slMipmap.setMaximum( numMipmapLevels );
+							enableMipmap = true;
+						}
+						else
+						{
+							enableMipmap = false;
+						}
 					}
 				}
 				catch ( final Exception ex )
@@ -95,6 +115,8 @@ public class ImportPlugIn implements PlugIn
 				tfTimepoint.setEnabled( enable );
 				slSetup.setEnabled( enable );
 				tfSetup.setEnabled( enable );
+				slMipmap.setEnabled( enableMipmap );
+				tfMipmap.setEnabled( enableMipmap );
 				cVirtual.setEnabled( enable );
 			}
 		}
@@ -107,6 +129,7 @@ public class ImportPlugIn implements PlugIn
 			public boolean dialogItemChanged( final GenericDialog dialog, final AWTEvent e )
 			{
 				gd.getNextString();
+				gd.getNextNumber();
 				gd.getNextNumber();
 				gd.getNextNumber();
 				gd.getNextBoolean();
@@ -127,6 +150,7 @@ public class ImportPlugIn implements PlugIn
 		xmlFile = gd.getNextString();
 		timepoint = ( int ) gd.getNextNumber();
 		setup = ( int ) gd.getNextNumber();
+		mipmap = ( int ) gd.getNextNumber();
 		openAsVirtualStack = gd.getNextBoolean();
 
 		System.out.println( xmlFile + " " + timepoint + " " + setup );
@@ -143,22 +167,32 @@ public class ImportPlugIn implements PlugIn
 				setup = Math.max( Math.min( setup, numSetups - 1 ), 0 );
 				final int timepointId = timepointsOrdered.get( timepoint ).getId();
 				final int setupId = setupsOrdered.get( setup ).getId();
-				@SuppressWarnings( "unchecked" )
-				final BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) seq.getImgLoader();
-				final RandomAccessibleInterval< UnsignedShortType > img = il.getImage( new ViewId( timepointId, setupId ) );
 
-//				final UnsignedShortType t = new UnsignedShortType();
-//				final Img< UnsignedShortType > copy = net.imglib2.util.Util.getArrayOrCellImgFactory( img, t ).create( img, t );
-//				final Cursor< UnsignedShortType > in = Views.flatIterable( img ).cursor();
-//				final Cursor< UnsignedShortType > out = Views.flatIterable( copy ).cursor();
-//				final long t0 = System.currentTimeMillis();
-//				while( in.hasNext() )
-//					out.next().set( in.next() );
-//				final long t1 = System.currentTimeMillis();
-//				System.out.println( t1 - t0 );
+				@SuppressWarnings( "unchecked" )
+				BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) seq.getImgLoader();
+				boolean duplicateImp = !openAsVirtualStack;
+				if ( !openAsVirtualStack && il instanceof Hdf5ImageLoader )
+				{
+					final Hdf5ImageLoader h5il = ( Hdf5ImageLoader ) il;
+					il = h5il.getMonolithicImageLoader();
+					duplicateImp = false;
+				}
+
+				final RandomAccessibleInterval< UnsignedShortType > img;
+				if ( il instanceof ViewerImgLoader )
+				{
+					final ViewerImgLoader< UnsignedShortType, ? > vil = ( ViewerImgLoader< UnsignedShortType, ? > ) seq.getImgLoader();
+					final int numMipmapLevels = vil.numMipmapLevels( setupId );
+					if ( mipmap >= numMipmapLevels )
+						mipmap = numMipmapLevels - 1;
+					img = vil.getImage( new ViewId( timepointId, setupId ), mipmap );
+				}
+				else
+					img = il.getImage( new ViewId( timepointId, setupId ) );
 
 				ImagePlus imp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( img, "" );
-				if ( !openAsVirtualStack )
+				imp.setDimensions( 1, imp.getImageStackSize(), 1 );
+				if ( duplicateImp )
 					imp = imp.duplicate();
 				imp.setTitle( new File( xmlFile ).getName() + " " + timepoint + " " + setup );
 				final VoxelDimensions voxelSize = setupsOrdered.get( setup ).getVoxelSize();

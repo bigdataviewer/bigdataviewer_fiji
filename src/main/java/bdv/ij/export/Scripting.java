@@ -203,7 +203,7 @@ public class Scripting
 		public void writePartition( final int index )
 		{
 			if ( index >= 0 && index < partitions.size() )
-				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, deflate, partitions.get( index ), null );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, deflate, partitions.get( index ), null, null, null );
 		}
 
 		public void writeXmlAndLinks() throws SpimDataException
