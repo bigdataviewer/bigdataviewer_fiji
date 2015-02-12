@@ -2,15 +2,19 @@ package bdv.ij;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
+
 import com.google.gson.stream.JsonReader;
+
 import ij.IJ;
 import ij.ImageJ;
 import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
+
 import org.apache.commons.lang.StringUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -25,8 +29,11 @@ import java.util.Map;
 
 public class BigDataBrowserPlugin implements PlugIn
 {
-	Map< String, ImageIcon > imageMap = new HashMap< String, ImageIcon >();
-	Map< String, String > datasetUrlMap = new HashMap< String, String >();
+	private final Map< String, ImageIcon > imageMap = new HashMap< String, ImageIcon >();
+
+	private final Map< String, String > datasetUrlMap = new HashMap< String, String >();
+
+	public static String serverUrl = "http://";
 
 	@Override
 	public void run( final String arg )
@@ -36,111 +43,102 @@ public class BigDataBrowserPlugin implements PlugIn
 		{
 			image = ImageIO.read( new URL( "http://fiji.sc/_images/a/ae/Fiji-icon.png" ) );
 		}
-		catch ( IOException e )
+		catch ( final IOException e )
 		{
 			e.printStackTrace();
 		}
 
-		String serverUrl = "http://scicomp-pc-1-10gb:8070";
-
-		Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
+		final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
 				JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
 
 		if ( remoteUrl == null )
 			return;
 
-		ArrayList< String > nameList = new ArrayList< String >();
-		boolean ret = getDatasetList( remoteUrl.toString(), nameList );
-		if ( !ret )
-			IJ.showMessage( "The server is not available." );
-		else
-			createDatasetListUI( remoteUrl.toString(), nameList.toArray() );
+		serverUrl = remoteUrl.toString();
 
-	}
-
-	private boolean getDatasetList( String remoteUrl, ArrayList< String > nameList )
-	{
+		final ArrayList< String > nameList = new ArrayList< String >();
 		try
 		{
-			// Get JSON string from the server
-			final URL url = new URL( remoteUrl + "/json/" );
+			getDatasetList( serverUrl, nameList );
+		}
+		catch ( final IOException e )
+		{
+			IJ.showMessage( "Error connecting to server at " + serverUrl );
+			e.printStackTrace();
+		}
+		createDatasetListUI( serverUrl, nameList.toArray() );
+	}
 
-			final InputStream is = url.openStream();
-			final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
+	private boolean getDatasetList( final String remoteUrl, final ArrayList< String > nameList ) throws IOException
+	{
+		// Get JSON string from the server
+		final URL url = new URL( remoteUrl + "/json/" );
+
+		final InputStream is = url.openStream();
+		final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
+
+		reader.beginObject();
+
+		while ( reader.hasNext() )
+		{
+			// skipping id
+			reader.nextName();
 
 			reader.beginObject();
 
+			String id = null, description = null, thumbnailUrl = null, datasetUrl = null;
 			while ( reader.hasNext() )
 			{
-				// skipping id
-				reader.nextName();
-
-				reader.beginObject();
-
-				String name = reader.nextName();
-				String id = null, description = null, thumbnailUrl = null, datasetUrl = null;
-
+				final String name = reader.nextName();
 				if ( name.equals( "id" ) )
-				{
 					id = reader.nextString();
-					nameList.add( id );
-				}
-
-				name = reader.nextName();
-				if ( name.equals( "description" ) )
-				{
+				else if ( name.equals( "description" ) )
 					description = reader.nextString();
-				}
-
-				name = reader.nextName();
-				if ( name.equals( "thumbnailUrl" ) )
-				{
+				else if ( name.equals( "thumbnailUrl" ) )
 					thumbnailUrl = reader.nextString();
-					if ( StringUtils.isNotEmpty( thumbnailUrl ) )
-						imageMap.put( id, new ImageIcon( new URL( thumbnailUrl ) ) );
-				}
-
-				name = reader.nextName();
-				if ( name.equals( "datasetUrl" ) )
-				{
+				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
-					datasetUrlMap.put( id, datasetUrl );
-				}
+			}
 
-				reader.endObject();
+			if ( id != null )
+			{
+				nameList.add( id );
+				if ( thumbnailUrl != null && StringUtils.isNotEmpty( thumbnailUrl ) )
+					imageMap.put( id, new ImageIcon( new URL( thumbnailUrl ) ) );
+				if ( datasetUrl != null )
+					datasetUrlMap.put( id, datasetUrl );
 			}
 
 			reader.endObject();
+		}
 
-		}
-		catch ( IOException exception )
-		{
-			exception.printStackTrace();
-			return false;
-		}
+		reader.endObject();
+
+		reader.close();
 
 		return true;
 	}
 
-	private void createDatasetListUI( String remoteUrl, Object[] values )
+	private void createDatasetListUI( final String remoteUrl, final Object[] values )
 	{
-		JList list = new JList( values );
+		final JList list = new JList( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
 		list.addMouseListener( new MouseAdapter()
 		{
-			public void mouseClicked( MouseEvent evt )
+			@Override
+			public void mouseClicked( final MouseEvent evt )
 			{
-				JList list = ( JList ) evt.getSource();
+				final JList list = ( JList ) evt.getSource();
 				if ( evt.getClickCount() == 2 )
 				{
-					int index = list.locationToIndex( evt.getPoint() );
-					String key = String.valueOf( list.getModel().getElementAt( index ) );
+					final int index = list.locationToIndex( evt.getPoint() );
+					final String key = String.valueOf( list.getModel().getElementAt( index ) );
 					System.out.println( key );
 					try
 					{
 						BigDataViewer.view( datasetUrlMap.get( key ), new ProgressWriterIJ() );
 					}
-					catch ( SpimDataException e )
+					catch ( final SpimDataException e )
 					{
 						e.printStackTrace();
 					}
@@ -148,10 +146,10 @@ public class BigDataBrowserPlugin implements PlugIn
 			}
 		} );
 
-		JScrollPane scroll = new JScrollPane( list );
+		final JScrollPane scroll = new JScrollPane( list );
 		scroll.setPreferredSize( new Dimension( 600, 800 ) );
 
-		JFrame frame = new JFrame();
+		final JFrame frame = new JFrame();
 		frame.setTitle( "BigDataServer Browser - " + remoteUrl );
 		frame.add( scroll );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
@@ -162,16 +160,17 @@ public class BigDataBrowserPlugin implements PlugIn
 
 	public class ThumbnailListRenderer extends DefaultListCellRenderer
 	{
+		private static final long serialVersionUID = 1L;
 
 		Font font = new Font( "helvetica", Font.BOLD, 12 );
 
 		@Override
 		public Component getListCellRendererComponent(
-				JList list, Object value, int index,
-				boolean isSelected, boolean cellHasFocus )
+				final JList list, final Object value, final int index,
+				final boolean isSelected, final boolean cellHasFocus )
 		{
 
-			JLabel label = ( JLabel ) super.getListCellRendererComponent(
+			final JLabel label = ( JLabel ) super.getListCellRendererComponent(
 					list, value, index, isSelected, cellHasFocus );
 			label.setIcon( imageMap.get( ( String ) value ) );
 			label.setHorizontalTextPosition( JLabel.RIGHT );
@@ -182,7 +181,7 @@ public class BigDataBrowserPlugin implements PlugIn
 
 	public static void main( final String[] args )
 	{
-		new ImageJ();
+		ImageJ.main( args );
 		new BigDataBrowserPlugin().run( null );
 	}
 }
