@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author HongKee Moon <moon@mpi-cbg.de>
+ */
 public class BigDataBrowserPlugin implements PlugIn
 {
 	private final Map< String, ImageIcon > imageMap = new HashMap< String, ImageIcon >();
