@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * @author HongKee Moon <moon@mpi-cbg.de>
  */
-public class BigDataBrowserPlugin implements PlugIn
+public class BigDataBrowserPlugIn implements PlugIn
 {
 	private final Map< String, ImageIcon > imageMap = new HashMap< String, ImageIcon >();
 
@@ -185,6 +185,6 @@ public class BigDataBrowserPlugin implements PlugIn
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
-		new BigDataBrowserPlugin().run( null );
+		new BigDataBrowserPlugIn().run( null );
 	}
 }
