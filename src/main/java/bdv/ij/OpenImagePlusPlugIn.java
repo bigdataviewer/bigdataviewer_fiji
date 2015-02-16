@@ -21,7 +21,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
 import ij.process.LUT;
-import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -173,20 +172,13 @@ public class OpenImagePlusPlugIn implements PlugIn
 		final SpimDataMinimal spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
 		WrapBasicImgLoader.wrapImgLoaderIfNecessary( spimData );
 
-		try
-		{
-			final BigDataViewer bdv = new BigDataViewer( spimData, "BigDataViewer", new ProgressWriterIJ() );
-			final SetupAssignments sa = bdv.getSetupAssignments();
-			final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
-			if ( imp.isComposite() )
-				transferChannelSettings( ( CompositeImage ) imp, sa, vg );
-			else if ( imp.getType() == ImagePlus.COLOR_RGB )
-				transferSettingsRGB( imp, sa );
-		}
-		catch ( final SpimDataException e )
-		{
-			throw new RuntimeException( e );
-		}
+		final BigDataViewer bdv = new BigDataViewer( spimData, "BigDataViewer", new ProgressWriterIJ() );
+		final SetupAssignments sa = bdv.getSetupAssignments();
+		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
+		if ( imp.isComposite() )
+			transferChannelSettings( ( CompositeImage ) imp, sa, vg );
+		else if ( imp.getType() == ImagePlus.COLOR_RGB )
+			transferSettingsRGB( imp, sa );
 	}
 
 	protected void transferChannelSettings( final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
