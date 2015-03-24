@@ -19,9 +19,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,13 +49,47 @@ public class BigDataBrowserPlugIn implements PlugIn
 			e.printStackTrace();
 		}
 
-		final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
-				JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
+		if ( null == arg )
+		{
+			final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
+					JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
 
-		if ( remoteUrl == null )
-			return;
+			if ( remoteUrl == null )
+				return;
 
-		serverUrl = remoteUrl.toString();
+			serverUrl = remoteUrl.toString();
+		}
+		else
+		{
+			String line = null;
+			FileReader fileReader = null;
+
+			try
+			{
+				fileReader = new FileReader( new File( arg ) );
+			}
+			catch ( FileNotFoundException e )
+			{
+				e.printStackTrace();
+			}
+
+			BufferedReader br = new BufferedReader( fileReader );
+
+			try
+			{
+				if ( ( line = br.readLine() ) != null )
+				{
+					serverUrl = line;
+				}
+			}
+			catch ( IOException e )
+			{
+				e.printStackTrace();
+			}
+
+			if ( line == null )
+				return;
+		}
 
 		final ArrayList< String > nameList = new ArrayList< String >();
 		try
@@ -185,6 +217,6 @@ public class BigDataBrowserPlugIn implements PlugIn
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
-		new BigDataBrowserPlugIn().run( null );
+		new BigDataBrowserPlugIn().run( "/Users/moon/Desktop/local.bdv" );
 	}
 }
