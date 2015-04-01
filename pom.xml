@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>sc.fiji</groupId>
 		<artifactId>pom-bigdataviewer</artifactId>
-		<version>1.0.10</version>
+		<version>1.1.2</version>
 	</parent>
 
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>1.0.10-SNAPSHOT</version>
+	<version>1.0.11-SNAPSHOT</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
