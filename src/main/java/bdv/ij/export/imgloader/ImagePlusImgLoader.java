@@ -1,7 +1,11 @@
 package bdv.ij.export.imgloader;
 
+import java.util.ArrayList;
+
 import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
+import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
 import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.stats.ComputeMinMax;
@@ -9,9 +13,7 @@ import net.imglib2.converter.Converters;
 import net.imglib2.converter.RealUnsignedShortConverter;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-import net.imglib2.type.numeric.real.FloatType;
 import bdv.img.cache.VolatileGlobalCellCache;
 import bdv.img.imagestack.ImageStackImageLoader;
 import bdv.img.virtualstack.VirtualStackImageLoader;
@@ -29,7 +31,7 @@ import bdv.img.virtualstack.VirtualStackImageLoader;
  *
  * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
  */
-public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > implements BasicImgLoader< UnsignedShortType >
+public class ImagePlusImgLoader implements TypedBasicImgLoader< UnsignedShortType >
 {
 	public static enum MinMaxOption
 	{
@@ -38,49 +40,51 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 		TAKE_FROM_IMAGEPROCESSOR
 	}
 
-	public static ImagePlusImgLoader< UnsignedByteType > createGray8( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
+	public static ImagePlusImgLoader createGray8( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY8 )
 			throw new RuntimeException( "expected ImagePlus type GRAY8" );
 		if ( imp.getStack() != null && imp.getStack().isVirtual() )
-			return new ImagePlusImgLoader< UnsignedByteType >( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
 		else
-			return new ImagePlusImgLoader< UnsignedByteType >( imp, ImageStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, ImageStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max );
 	}
 
-	public static ImagePlusImgLoader< UnsignedShortType > createGray16( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
+	public static ImagePlusImgLoader createGray16( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY16 )
 			throw new RuntimeException( "expected ImagePlus type GRAY16" );
 		if ( imp.getStack() != null && imp.getStack().isVirtual() )
-			return new ImagePlusImgLoader< UnsignedShortType >( imp, VirtualStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, VirtualStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
 		else
-			return new ImagePlusImgLoader< UnsignedShortType >( imp, ImageStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, ImageStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max );
 	}
 
-	public static ImagePlusImgLoader< FloatType > createGray32( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
+	public static ImagePlusImgLoader createGray32( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY32 )
 			throw new RuntimeException( "expected ImagePlus type GRAY32" );
 		if ( imp.getStack() != null && imp.getStack().isVirtual() )
-			return new ImagePlusImgLoader< FloatType >( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
 		else
-			return new ImagePlusImgLoader< FloatType >( imp, ImageStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
+			return new ImagePlusImgLoader( imp, ImageStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max );
 	}
 
 	protected final ImagePlus imp;
 
-	protected final BasicImgLoader< T > loader;
+	protected final BasicImgLoader loader;
 
-	protected VolatileGlobalCellCache< ? > loadercache;
+	protected VolatileGlobalCellCache loadercache;
+
+	protected final ArrayList< SetupImgLoader< ? > > setupImgLoaders;
 
 	protected double impMin;
 
 	protected double impMax;
 
 	@SuppressWarnings( "unchecked" )
-	protected ImagePlusImgLoader( final ImagePlus imp,
-			final BasicImgLoader< T > loader,
+	protected< T extends RealType< T > & NativeType< T > > ImagePlusImgLoader( final ImagePlus imp,
+			final TypedBasicImgLoader< T > loader,
 			final MinMaxOption minMaxOption,
 			final double min,
 			final double max )
@@ -88,8 +92,13 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 		this.imp = imp;
 		this.loader = loader;
 
+		final int numSetups = imp.getNChannels();
+		setupImgLoaders = new ArrayList< SetupImgLoader< ? > >();
+		for ( int setupId = 0; setupId < numSetups; ++setupId )
+			setupImgLoaders.add( new SetupImgLoader< T >( loader.getSetupImgLoader( setupId ) ) );
+
 		if ( loader instanceof VirtualStackImageLoader )
-			this.loadercache = ( ( VirtualStackImageLoader< T, ?, ? > ) loader ).getCache();
+			this.loadercache = ( ( VirtualStackImageLoader< ?, ?, ? > ) loader ).getCache();
 		else
 			this.loadercache = null;
 
@@ -97,14 +106,13 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 		{
 			impMin = Double.POSITIVE_INFINITY;
 			impMax = Double.NEGATIVE_INFINITY;
-			final T minT = loader.getImageType().createVariable();
-			final T maxT = loader.getImageType().createVariable();
-			final int numSetups = imp.getNChannels();
+			final T minT = loader.getSetupImgLoader( 0 ).getImageType().createVariable();
+			final T maxT = minT.createVariable();
 			final int numTimepoints = imp.getNFrames();
 			for ( int t = 0; t < numTimepoints; t++ )
 				for ( int s = 0; s < numSetups; ++s )
 				{
-					ComputeMinMax.computeMinMax( loader.getImage( new ViewId( t, s ) ), minT, maxT );
+					ComputeMinMax.computeMinMax( loader.getSetupImgLoader( s ).getImage( t ), minT, maxT );
 					impMin = Math.min( minT.getRealDouble(), impMin );
 					impMax = Math.max( maxT.getRealDouble(), impMax );
 					if ( loadercache != null )
@@ -139,18 +147,34 @@ public class ImagePlusImgLoader< T extends RealType< T > & NativeType< T > > imp
 		}
 	}
 
-	@Override
-	public RandomAccessibleInterval< UnsignedShortType > getImage( final ViewId view )
+	public class SetupImgLoader< T extends RealType< T > & NativeType< T > > implements BasicSetupImgLoader< UnsignedShortType >
 	{
-		if ( loadercache != null )
-			loadercache.clearCache();
-		final RandomAccessibleInterval< T > img = loader.getImage( view );
-		return Converters.convert( img, new RealUnsignedShortConverter< T >( impMin, impMax ), new UnsignedShortType() );
+		final BasicSetupImgLoader< T > loader;
+
+		protected SetupImgLoader( final BasicSetupImgLoader< T > loader )
+		{
+			this.loader = loader;
+		}
+
+		@Override
+		public RandomAccessibleInterval< UnsignedShortType > getImage( final int timepointId )
+		{
+			if ( loadercache != null )
+				loadercache.clearCache();
+			final RandomAccessibleInterval< T > img = loader.getImage( timepointId );
+			return Converters.convert( img, new RealUnsignedShortConverter< T >( impMin, impMax ), new UnsignedShortType() );
+		}
+
+		@Override
+		public UnsignedShortType getImageType()
+		{
+			return new UnsignedShortType();
+		}
 	}
 
 	@Override
-	public UnsignedShortType getImageType()
+	public SetupImgLoader< ? > getSetupImgLoader( final int setupId )
 	{
-		return new UnsignedShortType();
+		return setupImgLoaders.get( setupId );
 	}
 }

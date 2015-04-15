@@ -1,8 +1,11 @@
 package bdv.img.imagestack;
 
+import java.util.ArrayList;
+
 import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
-import mpicbg.spim.data.sequence.ViewId;
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
+import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.basictypeaccess.array.ArrayDataAccess;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
@@ -17,7 +20,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 
-public abstract class ImageStackImageLoader< T extends NumericType< T > & NativeType< T >, A extends ArrayDataAccess< A > > implements BasicImgLoader< T >
+public abstract class ImageStackImageLoader< T extends NumericType< T > & NativeType< T >, A extends ArrayDataAccess< A > > implements TypedBasicImgLoader< T >, BasicImgLoader
 {
 	public static ImageStackImageLoader< UnsignedByteType, ByteArray > createUnsignedByteInstance( final ImagePlus imp )
 	{
@@ -97,37 +100,59 @@ public abstract class ImageStackImageLoader< T extends NumericType< T > & Native
 
 	private final long[] dim;
 
+	private final ArrayList< SetupImgLoader > setupImgLoaders;
+
 	public ImageStackImageLoader( final T type, final ImagePlus imp )
 	{
 		this.type = type;
 		this.imp = imp;
 		this.dim = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
+		final int numSetups = imp.getNChannels();
+		setupImgLoaders = new ArrayList< SetupImgLoader >();
+		for ( int setupId = 0; setupId < numSetups; ++setupId )
+			setupImgLoaders.add( new SetupImgLoader( setupId ) );
 	}
 
 	protected abstract A wrapPixels( Object array );
 
 	protected abstract void linkType( PlanarImg< T, A > img );
 
-	@Override
-	public RandomAccessibleInterval< T > getImage( final ViewId view )
+	public class SetupImgLoader implements BasicSetupImgLoader< T >
 	{
-		return new PlanarImg< T, A >( dim, type.getEntitiesPerPixel() )
+		private final int setupId;
+
+		public SetupImgLoader( final int setupId )
 		{
-			private PlanarImg< T, A > init()
+			this.setupId = setupId;
+		}
+
+		@Override
+		public RandomAccessibleInterval< T > getImage( final int timepointId )
+		{
+			return new PlanarImg< T, A >( dim, type.getEntitiesPerPixel() )
 			{
-				final int channel = view.getViewSetupId() + 1;
-				final int frame = view.getTimePointId() + 1;
-				for ( int slice = 1; slice <= dim[ 2 ]; ++slice )
-					mirror.set( slice - 1, wrapPixels( imp.getStack().getPixels( imp.getStackIndex( channel, slice, frame ) ) ) );
-				linkType( this );
-				return this;
-			}
-		}.init();
+				private PlanarImg< T, A > init()
+				{
+					final int channel = setupId + 1;
+					final int frame = timepointId + 1;
+					for ( int slice = 1; slice <= dim[ 2 ]; ++slice )
+						mirror.set( slice - 1, wrapPixels( imp.getStack().getPixels( imp.getStackIndex( channel, slice, frame ) ) ) );
+					linkType( this );
+					return this;
+				}
+			}.init();
+		}
+
+		@Override
+		public T getImageType()
+		{
+			return type;
+		}
 	}
 
 	@Override
-	public T getImageType()
+	public SetupImgLoader getSetupImgLoader( final int setupId )
 	{
-		return type;
+		return setupImgLoaders.get( setupId );
 	}
 }
