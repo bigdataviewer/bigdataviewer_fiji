@@ -121,7 +121,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 		switch ( imp.getType() )
 		{
 		case ImagePlus.GRAY8:
-			imgLoader = ImagePlusImgLoader.createGray8( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
+			imgLoader = ImagePlusImgLoader.createFloatFromGray8( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
 			break;
 		case ImagePlus.GRAY16:
 			imgLoader = ImagePlusImgLoader.createGray16( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
@@ -321,7 +321,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 
 	static boolean lastDeflate = true;
 
-	static String lastExportPath = "./export.xml";
+	static String lastExportPath = "/Users/pietzsch/Desktop/exportfloat.xml";
 
 	protected Parameters getParameters( final double impMin, final double impMax, final ExportMipmapInfo autoMipmapSettings  )
 	{
