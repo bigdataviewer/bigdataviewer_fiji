@@ -49,7 +49,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 			e.printStackTrace();
 		}
 
-		if ( null == arg )
+		if ( null == arg || arg == "" )
 		{
 			final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
 					JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
@@ -217,6 +217,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
-		new BigDataBrowserPlugIn().run( "/Users/moon/Desktop/local.bdv" );
+		//new BigDataBrowserPlugIn().run( "/Users/moon/Desktop/local.bdv" );
+		new BigDataBrowserPlugIn().run( null );
 	}
 }
