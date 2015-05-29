@@ -7,6 +7,7 @@ import java.awt.FileDialog;
 import java.awt.Frame;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JFileChooser;
@@ -87,7 +88,7 @@ public class BigDataViewerPlugIn implements PlugIn
 				}
 			} );
 			fd.setVisible( true );
-			if ( !workedWithFilenameFilter.get() )
+			if ( isMac() && !workedWithFilenameFilter.get() )
 			{
 				fd.setFilenameFilter( null );
 				fd.setVisible( true );
@@ -111,5 +112,11 @@ public class BigDataViewerPlugIn implements PlugIn
 				throw new RuntimeException( e );
 			}
 		}
+	}
+
+	private boolean isMac()
+	{
+		final String OS = System.getProperty( "os.name", "generic" ).toLowerCase( Locale.ENGLISH );
+		return ( OS.indexOf( "mac" ) >= 0 ) || ( OS.indexOf( "darwin" ) >= 0 );
 	}
 }
