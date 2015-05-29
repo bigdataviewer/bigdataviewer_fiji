@@ -91,7 +91,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 				return;
 		}
 
-		final ArrayList< String > nameList = new ArrayList< String >();
+		final ArrayList< Object > nameList = new ArrayList< Object >();
 		try
 		{
 			getDatasetList( serverUrl, nameList );
@@ -104,13 +104,60 @@ public class BigDataBrowserPlugIn implements PlugIn
 		createDatasetListUI( serverUrl, nameList.toArray() );
 	}
 
-	private boolean getDatasetList( final String remoteUrl, final ArrayList< String > nameList ) throws IOException
+	class DataSet
+	{
+		private final String name;
+		private final String description;
+		private final String category;
+
+		DataSet( String name, String description, String category )
+		{
+
+			this.name = name;
+			this.description = description;
+			this.category = category;
+		}
+
+		public String getName()
+		{
+			return name;
+		}
+
+		public String getDescription()
+		{
+			return description;
+		}
+
+		public String getCategory()
+		{
+			return category;
+		}
+	}
+
+	class Category
+	{
+		private final String name;
+
+		Category( String name )
+		{
+			this.name = name;
+		}
+
+		public String getName()
+		{
+			return name;
+		}
+	}
+
+	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList ) throws IOException
 	{
 		// Get JSON string from the server
 		final URL url = new URL( remoteUrl + "/json/" );
 
 		final InputStream is = url.openStream();
 		final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
+
+		String prevCategory = null;
 
 		reader.beginObject();
 
@@ -121,7 +168,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 			reader.beginObject();
 
-			String id = null, description = null, thumbnailUrl = null, datasetUrl = null;
+			String id = null, category = null, description = null, thumbnailUrl = null, datasetUrl = null;
 			while ( reader.hasNext() )
 			{
 				final String name = reader.nextName();
@@ -133,11 +180,21 @@ public class BigDataBrowserPlugIn implements PlugIn
 					thumbnailUrl = reader.nextString();
 				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
+				else if ( name.equals( "category" ) )
+					category = reader.nextString();
+				else if ( name.equals( "index" ) )
+					reader.nextString();
+			}
+
+			if ( prevCategory == null || prevCategory != category )
+			{
+				prevCategory = category;
+				nameList.add( new Category( prevCategory ) );
 			}
 
 			if ( id != null )
 			{
-				nameList.add( id );
+				nameList.add( new DataSet( id, description, category ) );
 				if ( thumbnailUrl != null && StringUtils.isNotEmpty( thumbnailUrl ) )
 					imageMap.put( id, new ImageIcon( new URL( thumbnailUrl ) ) );
 				if ( datasetUrl != null )
@@ -167,15 +224,20 @@ public class BigDataBrowserPlugIn implements PlugIn
 				if ( evt.getClickCount() == 2 )
 				{
 					final int index = list.locationToIndex( evt.getPoint() );
-					final String key = String.valueOf( list.getModel().getElementAt( index ) );
-					System.out.println( key );
-					try
+					final Object cell = list.getModel().getElementAt( index );
+
+					if ( cell instanceof DataSet )
 					{
-						BigDataViewer.view( datasetUrlMap.get( key ), new ProgressWriterIJ() );
-					}
-					catch ( final SpimDataException e )
-					{
-						e.printStackTrace();
+						DataSet ds = ( DataSet ) cell;
+						System.out.println( ds.getName() );
+						try
+						{
+							BigDataViewer.view( datasetUrlMap.get( ds.getName() ), new ProgressWriterIJ() );
+						}
+						catch ( final SpimDataException e )
+						{
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -197,7 +259,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 	{
 		private static final long serialVersionUID = 1L;
 
-		Font font = new Font( "helvetica", Font.BOLD, 12 );
+		Font font = new Font( "helvetica", Font.PLAIN, 12 );
 
 		@Override
 		public Component getListCellRendererComponent(
@@ -207,9 +269,23 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 			final JLabel label = ( JLabel ) super.getListCellRendererComponent(
 					list, value, index, isSelected, cellHasFocus );
-			label.setIcon( imageMap.get( ( String ) value ) );
-			label.setHorizontalTextPosition( JLabel.RIGHT );
-			label.setFont( font );
+
+			if ( value instanceof Category )
+			{
+				Category category = ( Category ) value;
+				label.setText( category.getName() );
+				label.setFont( label.getFont().deriveFont( Font.BOLD, 26 ) );
+				label.setBorder( BorderFactory.createEmptyBorder( 0, 5, 0, 0 ) );
+			}
+			else
+			{
+				DataSet ds = ( DataSet ) value;
+				label.setIcon( imageMap.get( ds.getName() ) );
+				label.setText( "<html><b>" + ds.getName() + "</b><br/> " + ds.getDescription() + "</html>" );
+				label.setHorizontalTextPosition( JLabel.RIGHT );
+				label.setFont( font );
+			}
+
 			return label;
 		}
 	}
