@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>1.0.13-SNAPSHOT</version>
+	<version>1.0.13</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
@@ -67,7 +67,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/tpietzsch/spimviewer</connection>
 		<developerConnection>scm:git:git@github.com:tpietzsch/spimviewer</developerConnection>
-		<tag>HEAD</tag>
+		<tag>bigdataviewer_fiji-1.0.13</tag>
 		<url>https://github.com/tpietzsch/spimviewer</url>
 	</scm>
 
