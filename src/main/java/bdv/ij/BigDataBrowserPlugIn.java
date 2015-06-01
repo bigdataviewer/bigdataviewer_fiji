@@ -21,6 +21,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +95,14 @@ public class BigDataBrowserPlugIn implements PlugIn
 		final ArrayList< Object > nameList = new ArrayList< Object >();
 		try
 		{
-			getDatasetList( serverUrl, nameList );
+			String category = "";
+			if ( serverUrl.indexOf( "/category/" ) > -1 )
+			{
+				String[] tokens = serverUrl.split( "/category/" );
+				serverUrl = tokens[ 0 ];
+				category = tokens[ 1 ];
+			}
+			getDatasetList( serverUrl, nameList, category );
 		}
 		catch ( final IOException e )
 		{
@@ -149,10 +157,10 @@ public class BigDataBrowserPlugIn implements PlugIn
 		}
 	}
 
-	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList ) throws IOException
+	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList, final String searchCategory ) throws IOException
 	{
 		// Get JSON string from the server
-		final URL url = new URL( remoteUrl + "/json/" );
+		final URL url = new URL( remoteUrl + "/json/?category=" + URLEncoder.encode( searchCategory, "UTF-8" ) );
 
 		final InputStream is = url.openStream();
 		final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
