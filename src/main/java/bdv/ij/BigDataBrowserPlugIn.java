@@ -194,7 +194,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 					reader.nextString();
 			}
 
-			if ( prevCategory == null || prevCategory != category )
+			if ( prevCategory == null || !prevCategory.equals( category ) )
 			{
 				prevCategory = category;
 				nameList.add( new Category( prevCategory ) );
