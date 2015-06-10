@@ -93,9 +93,10 @@ public class BigDataBrowserPlugIn implements PlugIn
 		}
 
 		final ArrayList< Object > nameList = new ArrayList< Object >();
+		String category = "";
 		try
 		{
-			String category = "";
+
 			if ( serverUrl.indexOf( "/category/" ) > -1 )
 			{
 				String[] tokens = serverUrl.split( "/category/" );
@@ -109,7 +110,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 			IJ.showMessage( "Error connecting to server at " + serverUrl );
 			e.printStackTrace();
 		}
-		createDatasetListUI( serverUrl, nameList.toArray() );
+		createDatasetListUI( category, serverUrl, nameList.toArray() );
 	}
 
 	class DataSet
@@ -219,7 +220,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 		return true;
 	}
 
-	private void createDatasetListUI( final String remoteUrl, final Object[] values )
+	private void createDatasetListUI( final String category, final String remoteUrl, final Object[] values )
 	{
 		final JList list = new JList( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
@@ -237,7 +238,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 					if ( cell instanceof DataSet )
 					{
 						DataSet ds = ( DataSet ) cell;
-						System.out.println( ds.getName() );
+
 						try
 						{
 							BigDataViewer.view( datasetUrlMap.get( ds.getName() ), new ProgressWriterIJ() );
@@ -255,7 +256,10 @@ public class BigDataBrowserPlugIn implements PlugIn
 		scroll.setPreferredSize( new Dimension( 600, 800 ) );
 
 		final JFrame frame = new JFrame();
-		frame.setTitle( "BigDataServer Browser - " + remoteUrl );
+		if ( category.equals( "" ) )
+			frame.setTitle( "BigDataServer Browser - " + remoteUrl );
+		else
+			frame.setTitle( "BigDataServer Browser - " + remoteUrl + "/category/" + category );
 		frame.add( scroll );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 		frame.pack();
