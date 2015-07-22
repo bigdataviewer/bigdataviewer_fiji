@@ -193,6 +193,8 @@ public class BigDataBrowserPlugIn implements PlugIn
 					category = reader.nextString();
 				else if ( name.equals( "index" ) )
 					reader.nextString();
+				else
+					reader.nextString();
 			}
 
 			if ( prevCategory == null || !prevCategory.equals( category ) )
