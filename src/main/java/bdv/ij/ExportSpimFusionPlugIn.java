@@ -294,7 +294,8 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		for ( final Partition partition : newPartitions )
 		{
 			final SubTaskProgressWriter subtaskProgress = new SubTaskProgressWriter( progress, complete, complete + completionStep );
-			WriteSequenceToHdf5.writeHdf5PartitionFile( fusionSeq, perSetupExportMipmapInfo, params.deflate, partition, null, null, subtaskProgress );
+			final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
+			WriteSequenceToHdf5.writeHdf5PartitionFile( fusionSeq, perSetupExportMipmapInfo, params.deflate, partition, null, null, numCellCreatorThreads, subtaskProgress );
 			complete += completionStep;
 		}
 
@@ -340,19 +341,20 @@ public class ExportSpimFusionPlugIn implements PlugIn
 			partitions = null;
 
 		// write to hdf5
+		final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
 		if ( params.split )
 		{
 			for ( int i = 0; i < partitions.size(); ++i )
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progress, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, params.deflate, partition, null, null, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, params.deflate, partition, null, null, numCellCreatorThreads, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( desc, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
-			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, params.deflate, params.hdf5File, null, null, new SubTaskProgressWriter( progress, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, params.deflate, params.hdf5File, null, null, numCellCreatorThreads, new SubTaskProgressWriter( progress, 0, 0.95 ) );
 		}
 
 		// write xml file
