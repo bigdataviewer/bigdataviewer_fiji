@@ -44,7 +44,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 		BufferedImage image = null;
 		try
 		{
-			image = ImageIO.read( new URL( "http://fiji.sc/_images/a/ae/Fiji-icon.png" ) );
+			image = ImageIO.read( getClass().getResourceAsStream( "/fiji.png" ) );
 		}
 		catch ( final IOException e )
 		{
@@ -101,6 +101,8 @@ public class BigDataBrowserPlugIn implements PlugIn
 					thumbnailUrl = reader.nextString();
 				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
+				else
+					reader.nextString();
 			}
 
 			if ( id != null )
