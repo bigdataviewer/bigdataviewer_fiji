@@ -111,7 +111,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
 				else
-					reader.nextString();
+					reader.skipValue();
 			}
 
 			if ( id != null )
