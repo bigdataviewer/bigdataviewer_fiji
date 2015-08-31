@@ -28,6 +28,7 @@ import org.jdom2.input.SAXBuilder;
 
 import bdv.export.ProgressWriter;
 import bdv.export.WriteSequenceToHdf5;
+import bdv.ij.util.PluginHelper;
 import bdv.img.hdf5.Hdf5ImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
@@ -315,7 +316,8 @@ public class CellVoyagerDataExporter
 		 * Write to HDF5
 		 */
 
-		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions, chunks, true, hdf5File, null, null, progressWriter );
+		final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
+		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions, chunks, true, hdf5File, null, null, numCellCreatorThreads, progressWriter );
 
 		/*
 		 * write XML sequence description

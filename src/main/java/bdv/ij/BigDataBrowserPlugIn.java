@@ -1,30 +1,41 @@
 package bdv.ij;
 
-import bdv.BigDataViewer;
-import bdv.ij.util.ProgressWriterIJ;
-
-import com.google.gson.stream.JsonReader;
-
 import ij.IJ;
 import ij.ImageJ;
 import ij.plugin.PlugIn;
-import mpicbg.spim.data.SpimDataException;
 
-import org.apache.commons.lang.StringUtils;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+
+import mpicbg.spim.data.SpimDataException;
+
+import org.apache.commons.lang.StringUtils;
+
+import bdv.BigDataViewer;
+import bdv.ij.util.ProgressWriterIJ;
+
+import com.google.gson.stream.JsonReader;
 
 /**
  * @author HongKee Moon <moon@mpi-cbg.de>
@@ -194,7 +205,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 				else if ( name.equals( "index" ) )
 					reader.nextString();
 				else
-					reader.nextString();
+					reader.skipValue();
 			}
 
 			if ( prevCategory == null || !prevCategory.equals( category ) )

@@ -10,6 +10,7 @@ import mpicbg.spim.io.ConfigurationParserException;
 import net.imglib2.realtransform.AffineTransform3D;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
+import bdv.ij.util.PluginHelper;
 import bdv.img.hdf5.Hdf5ImageLoader;
 import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;
@@ -203,7 +204,10 @@ public class Scripting
 		public void writePartition( final int index )
 		{
 			if ( index >= 0 && index < partitions.size() )
-				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, deflate, partitions.get( index ), null, null, null );
+			{
+				final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, deflate, partitions.get( index ), null, null, numCellCreatorThreads, null );
+			}
 		}
 
 		public void writeXmlAndLinks() throws SpimDataException

@@ -27,6 +27,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import bdv.ViewerImgLoader;
 import bdv.img.hdf5.Hdf5ImageLoader;
+import bdv.img.hdf5.MultiResolutionImgLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
@@ -170,22 +171,21 @@ public class ImportPlugIn implements PlugIn
 
 				@SuppressWarnings( "unchecked" )
 				BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) seq.getImgLoader();
-				boolean duplicateImp = !openAsVirtualStack;
+				final boolean duplicateImp = !openAsVirtualStack;
 				if ( !openAsVirtualStack && il instanceof Hdf5ImageLoader )
 				{
 					final Hdf5ImageLoader h5il = ( Hdf5ImageLoader ) il;
 					il = h5il.getMonolithicImageLoader();
-					duplicateImp = false;
 				}
 
 				final RandomAccessibleInterval< UnsignedShortType > img;
-				if ( il instanceof ViewerImgLoader )
+				if ( il instanceof MultiResolutionImgLoader )
 				{
-					final ViewerImgLoader< UnsignedShortType, ? > vil = ( ViewerImgLoader< UnsignedShortType, ? > ) seq.getImgLoader();
-					final int numMipmapLevels = vil.numMipmapLevels( setupId );
+					final MultiResolutionImgLoader< UnsignedShortType > mil = ( MultiResolutionImgLoader< UnsignedShortType > ) il;
+					final int numMipmapLevels = mil.numMipmapLevels( setupId );
 					if ( mipmap >= numMipmapLevels )
 						mipmap = numMipmapLevels - 1;
-					img = vil.getImage( new ViewId( timepointId, setupId ), mipmap );
+					img = mil.getImage( new ViewId( timepointId, setupId ), mipmap );
 				}
 				else
 					img = il.getImage( new ViewId( timepointId, setupId ) );

@@ -176,4 +176,9 @@ public class PluginHelper
 
 		throw new RuntimeException( "could not generate new partition filename" );
 	}
+
+	public static int numThreads()
+	{
+		return Math.max( 1, Prefs.getThreads() );
+	}
 }
