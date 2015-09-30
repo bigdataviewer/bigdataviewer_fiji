@@ -8,6 +8,7 @@ import java.util.Map;
 import mpicbg.spim.data.generic.base.Entity;
 import mpicbg.spim.data.generic.sequence.AbstractSequenceDescription;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -16,10 +17,8 @@ import mpicbg.spim.data.sequence.SequenceDescription;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.ViewId;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.cell.CellImg;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.util.PluginHelper;
@@ -50,12 +49,14 @@ public class SetupAggregator
 	 */
 	protected final ArrayList< ViewSetupWrapper > setups;
 
+	protected final ArrayList< BasicSetupImgLoader< ? > > setupImgLoaders;
+
 	protected final Map< Integer, ExportMipmapInfo > perSetupMipmapInfo;
 
 	/**
 	 * An {@link ImgLoader} that forwards to wrapped source sequences.
 	 */
-	protected final BasicImgLoader< UnsignedShortType > imgLoader;
+	protected final BasicImgLoader imgLoader;
 
 	/**
 	 * Create an empty aggregator.
@@ -65,22 +66,14 @@ public class SetupAggregator
 		timepoints = null;
 		registrations = new ArrayList< ViewRegistration >();
 		setups = new ArrayList< ViewSetupWrapper >();
+		setupImgLoaders = new ArrayList< BasicSetupImgLoader< ? > >();
 		perSetupMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
-		imgLoader = new BasicImgLoader< UnsignedShortType >()
+		imgLoader = new BasicImgLoader()
 		{
 			@Override
-			public RandomAccessibleInterval< UnsignedShortType > getImage( final ViewId view )
+			public BasicSetupImgLoader< ? > getSetupImgLoader( final int setupId )
 			{
-				final ViewSetupWrapper w = setups.get( view.getViewSetupId() );
-				@SuppressWarnings( "unchecked" )
-				final BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) w.getSourceSequence().getImgLoader();
-				return il.getImage( new ViewId( view.getTimePointId(), w.getSourceSetupId() ) );
-			}
-
-			@Override
-			public UnsignedShortType getImageType()
-			{
-				return new UnsignedShortType();
+				return setupImgLoaders.get( setupId );
 			}
 		};
 	}
@@ -120,6 +113,7 @@ public class SetupAggregator
 	{
 		final int setupId = setups.size();
 		setups.add( new ViewSetupWrapper( setupId, sourceSequence, sourceSetup ) );
+		setupImgLoaders.add( sourceSequence.getImgLoader().getSetupImgLoader( setupId ) );
 		if ( setupId == 0 )
 		{
 			// if this is the first setup added, initialize the timepoints

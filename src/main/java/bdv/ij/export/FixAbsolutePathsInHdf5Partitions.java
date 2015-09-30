@@ -42,7 +42,7 @@ public class FixAbsolutePathsInHdf5Partitions
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 		{
 			final int setupId = setup.getId();
-			final MipmapInfo info = il.getMipmapInfo( setupId );
+			final MipmapInfo info = il.getSetupImgLoader( setupId ).getMipmapInfo();
 			perSetupMipmapInfo.put( setupId, new ExportMipmapInfo(
 					Util.castToInts( info.getResolutions() ),
 					info.getSubdivisions() ) );

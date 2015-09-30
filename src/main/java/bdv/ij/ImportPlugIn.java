@@ -1,5 +1,6 @@
 package bdv.ij;
 
+import static mpicbg.spim.data.generic.sequence.ImgLoaderHints.LOAD_COMPLETELY;
 import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImageJ;
@@ -19,15 +20,14 @@ import java.util.List;
 
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
+import mpicbg.spim.data.generic.sequence.BasicMultiResolutionImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
+import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.sequence.TimePoint;
-import mpicbg.spim.data.sequence.ViewId;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
+import net.imglib2.type.numeric.NumericType;
 import bdv.ViewerImgLoader;
-import bdv.img.hdf5.Hdf5ImageLoader;
-import bdv.img.hdf5.MultiResolutionImgLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
@@ -95,8 +95,8 @@ public class ImportPlugIn implements PlugIn
 
 						if ( seq.getImgLoader() instanceof ViewerImgLoader )
 						{
-							final ViewerImgLoader< ?, ? > vil = ( ViewerImgLoader< ?, ? > ) seq.getImgLoader();
-							final int numMipmapLevels = vil.numMipmapLevels( seq.getViewSetupsOrdered().get( 0 ).getId() );
+							final ViewerImgLoader vil = ( ViewerImgLoader ) seq.getImgLoader();
+							final int numMipmapLevels = vil.getSetupImgLoader( seq.getViewSetupsOrdered().get( 0 ).getId() ).numMipmapLevels();
 
 							slMipmap.setMaximum( numMipmapLevels );
 							enableMipmap = true;
@@ -169,28 +169,24 @@ public class ImportPlugIn implements PlugIn
 				final int timepointId = timepointsOrdered.get( timepoint ).getId();
 				final int setupId = setupsOrdered.get( setup ).getId();
 
-				@SuppressWarnings( "unchecked" )
-				BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) seq.getImgLoader();
+				final BasicImgLoader il = seq.getImgLoader();
 				final boolean duplicateImp = !openAsVirtualStack;
-				if ( !openAsVirtualStack && il instanceof Hdf5ImageLoader )
-				{
-					final Hdf5ImageLoader h5il = ( Hdf5ImageLoader ) il;
-					il = h5il.getMonolithicImageLoader();
-				}
+				final ImgLoaderHint[] hints = openAsVirtualStack ? new ImgLoaderHint[ 0 ] : new ImgLoaderHint[] { LOAD_COMPLETELY };
 
-				final RandomAccessibleInterval< UnsignedShortType > img;
-				if ( il instanceof MultiResolutionImgLoader )
+				final RandomAccessibleInterval< ? > img;
+				if ( il instanceof BasicMultiResolutionImgLoader )
 				{
-					final MultiResolutionImgLoader< UnsignedShortType > mil = ( MultiResolutionImgLoader< UnsignedShortType > ) il;
-					final int numMipmapLevels = mil.numMipmapLevels( setupId );
+					final BasicMultiResolutionImgLoader mil = ( BasicMultiResolutionImgLoader ) il;
+					final int numMipmapLevels = mil.getSetupImgLoader( setupId ).numMipmapLevels();
 					if ( mipmap >= numMipmapLevels )
 						mipmap = numMipmapLevels - 1;
-					img = mil.getImage( new ViewId( timepointId, setupId ), mipmap );
+					img = mil.getSetupImgLoader( setupId ).getImage( timepointId, mipmap, hints );
 				}
 				else
-					img = il.getImage( new ViewId( timepointId, setupId ) );
+					img = il.getSetupImgLoader( setupId ).getImage( timepointId, hints );
 
-				ImagePlus imp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( img, "" );
+				@SuppressWarnings( { "unchecked", "rawtypes" } )
+				ImagePlus imp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( ( RandomAccessibleInterval< NumericType > ) img, "" );
 				imp.setDimensions( 1, imp.getImageStackSize(), 1 );
 				if ( duplicateImp )
 					imp = imp.duplicate();

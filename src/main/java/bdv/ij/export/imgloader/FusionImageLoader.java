@@ -5,11 +5,13 @@ import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
 
 import java.util.HashMap;
+import java.util.Map.Entry;
 
+import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.ImgLoader;
+import mpicbg.spim.data.sequence.SetupImgLoader;
 import mpicbg.spim.data.sequence.ViewDescription;
-import mpicbg.spim.data.sequence.ViewId;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -43,7 +45,7 @@ import net.imglib2.view.Views;
  *
  * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
  */
-public class FusionImageLoader< T extends RealType< T > > implements ImgLoader< UnsignedShortType >
+public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 {
 	private final String pattern;
 
@@ -57,7 +59,7 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader< 
 
 	private final UnsignedShortType type;
 
-	private final HashMap< Integer, Integer > setupIdToChannelId;
+	private final HashMap< Integer, SetupLoader > setupIdToSetupImgLoader;
 
 	public FusionImageLoader( final String pattern, final HashMap< Integer, Integer > setupIdToChannelId, final int numSlices, final SliceLoader< T > sliceLoader, final double sliceValueMin, final double sliceValueMax )
 	{
@@ -67,43 +69,19 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader< 
 	public FusionImageLoader( final String pattern, final HashMap< Integer, Integer > setupIdToChannelId, final int numSlices, final SliceLoader< T > sliceLoader, final double sliceValueMin, final double sliceValueMax, final ImgFactory< UnsignedShortType > factory )
 	{
 		this.pattern = pattern;
-		this.setupIdToChannelId = setupIdToChannelId;
 		this.numSlices = numSlices;
 		this.sliceLoader = sliceLoader;
 		converter = new RealUnsignedShortConverter< T >( sliceValueMin, sliceValueMax );
 		this.factory = factory;
 		type = new UnsignedShortType();
+		setupIdToSetupImgLoader = new HashMap< Integer, SetupLoader >();
+		for ( final Entry< Integer, Integer > entry : setupIdToChannelId.entrySet() )
+			setupIdToSetupImgLoader.put( entry.getKey(), new SetupLoader( entry.getValue() ) );
 	}
 
 	public static interface SliceLoader< T >
 	{
 		public RandomAccessibleInterval< T > load( String fn );
-	}
-
-	@Override
-	public RandomAccessibleInterval< UnsignedShortType > getImage( final ViewId view )
-	{
-		final int tp = view.getTimePointId();
-		final int c = setupIdToChannelId.get( view.getViewSetupId() );
-
-		final Dimensions dimensions = getImageSize( view );
-		final Img< UnsignedShortType > img = factory.create( dimensions, type );
-
-		for ( int z = 0; z < numSlices; ++z )
-		{
-			final RandomAccessibleInterval< T > slice = sliceLoader.load( String.format( pattern, tp, c, z ) );
-
-			final Cursor< UnsignedShortType > d = Views.flatIterable( Views.hyperSlice( img, 2, z ) ).cursor();
-			for ( final UnsignedShortType t : Converters.convert( Views.flatIterable( slice ), converter, type ) )
-				d.next().set( t );
-		}
-		return img;
-	}
-
-	@Override
-	public UnsignedShortType getImageType()
-	{
-		return new UnsignedShortType();
 	}
 
 	public static class ArrayImgLoader< T extends RealType< T > & NativeType< T > > implements SliceLoader< T >
@@ -165,27 +143,64 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader< 
 	}
 
 	@Override
-	public RandomAccessibleInterval< FloatType > getFloatImage( final ViewId view, final boolean normalize )
+	public SetupLoader getSetupImgLoader( final int setupId )
 	{
-		throw new UnsupportedOperationException();
+		return setupIdToSetupImgLoader.get( setupId );
 	}
 
-	@Override
-	public Dimensions getImageSize( final ViewId view )
+	public class SetupLoader implements SetupImgLoader< UnsignedShortType >
 	{
-		final int tp = view.getTimePointId();
-		final int c = setupIdToChannelId.get( view.getViewSetupId() );
+		private final int channelId;
 
-		final RandomAccessibleInterval< T > slice = sliceLoader.load( String.format( pattern, tp, c, 0 ) );
-		return new FinalDimensions(
-				slice.dimension( 0 ),
-				slice.dimension( 1 ),
-				numSlices );
-	}
+		protected SetupLoader( final int channelId )
+		{
+			this.channelId = channelId;
+		}
 
-	@Override
-	public VoxelDimensions getVoxelSize( final ViewId view )
-	{
-		return new FinalVoxelDimensions( "px", 1, 1, 1 );
+		@Override
+		public RandomAccessibleInterval< UnsignedShortType > getImage( final int timepointId, final ImgLoaderHint... hints )
+		{
+			final Dimensions dimensions = getImageSize( timepointId );
+			final Img< UnsignedShortType > img = factory.create( dimensions, type );
+
+			for ( int z = 0; z < numSlices; ++z )
+			{
+				final RandomAccessibleInterval< T > slice = sliceLoader.load( String.format( pattern, timepointId, channelId, z ) );
+
+				final Cursor< UnsignedShortType > d = Views.flatIterable( Views.hyperSlice( img, 2, z ) ).cursor();
+				for ( final UnsignedShortType t : Converters.convert( Views.flatIterable( slice ), converter, type ) )
+					d.next().set( t );
+			}
+			return img;
+		}
+
+		@Override
+		public UnsignedShortType getImageType()
+		{
+			return type;
+		}
+
+		@Override
+		public RandomAccessibleInterval< FloatType > getFloatImage( final int timepointId, final boolean normalize, final ImgLoaderHint... hints )
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Dimensions getImageSize( final int timepointId )
+		{
+			final RandomAccessibleInterval< T > slice = sliceLoader.load( String.format( pattern, timepointId, channelId, 0 ) );
+			return new FinalDimensions(
+					slice.dimension( 0 ),
+					slice.dimension( 1 ),
+					numSlices );
+		}
+
+		@Override
+		public VoxelDimensions getVoxelSize( final int timepointId )
+		{
+			return new FinalVoxelDimensions( "px", 1, 1, 1 );
+		}
+
 	}
 }

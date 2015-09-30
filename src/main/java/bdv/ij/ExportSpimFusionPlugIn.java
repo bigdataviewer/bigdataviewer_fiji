@@ -28,6 +28,7 @@ import java.util.Map;
 
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -43,9 +44,7 @@ import mpicbg.spim.io.SPIMConfiguration;
 import mpicbg.spim.io.TextFileAccess;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalDimensions;
-import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 import spimopener.SPIMExperiment;
@@ -154,11 +153,10 @@ public class ExportSpimFusionPlugIn implements PlugIn
 			// add one partition for the unpartitioned existing dataset
 			partitions.add( new Partition( existingHdf5Loader.getHdf5File().getAbsolutePath(), timepointIdentityMap, setupIdentityMap ) );
 
-
-
 		// wrap fused data setups with unused setup ids
 		final HashSet< Integer > usedSetupIds = new HashSet< Integer >( existingSequence.getViewSetups().keySet() );
 		final HashMap< Integer, ViewSetupWrapper > fusionSetups = new HashMap< Integer, ViewSetupWrapper >();
+		final HashMap< Integer, BasicSetupImgLoader< ? > > fusionSetupImgLoaders = new HashMap< Integer, BasicSetupImgLoader< ? > >();
 		final ArrayList< ViewRegistration > fusionRegistrations = new ArrayList< ViewRegistration >();
 		for ( final BasicViewSetup s : fusionSeq.getViewSetupsOrdered() )
 		{
@@ -166,6 +164,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 			while ( usedSetupIds.contains( fusionSetupId ) )
 				++fusionSetupId;
 			fusionSetups.put( fusionSetupId, new ViewSetupWrapper( fusionSetupId, fusionSeq, s ) );
+			fusionSetupImgLoaders.put( fusionSetupId, fusionSeq.getImgLoader().getSetupImgLoader( fusionSetupId ) );
 			usedSetupIds.add( fusionSetupId );
 
 			final int sourceSetupId = s.getId();
@@ -179,21 +178,12 @@ public class ExportSpimFusionPlugIn implements PlugIn
 			}
 
 		}
-		final BasicImgLoader< UnsignedShortType > wrappedFusionImgLoader = new BasicImgLoader< UnsignedShortType >()
+		final BasicImgLoader wrappedFusionImgLoader = new BasicImgLoader()
 		{
 			@Override
-			public RandomAccessibleInterval< UnsignedShortType > getImage( final ViewId view )
+			public BasicSetupImgLoader< ? > getSetupImgLoader( final int setupId )
 			{
-				final ViewSetupWrapper w = fusionSetups.get( view.getViewSetupId() );
-				@SuppressWarnings( "unchecked" )
-				final BasicImgLoader< UnsignedShortType > il = ( BasicImgLoader< UnsignedShortType > ) w.getSourceSequence().getImgLoader();
-				return il.getImage( new ViewId( view.getTimePointId(), w.getSourceSetupId() ) );
-			}
-
-			@Override
-			public UnsignedShortType getImageType()
-			{
-				return new UnsignedShortType();
+				return fusionSetupImgLoaders.get( setupId );
 			}
 		};
 		fusionSeq = new SequenceDescriptionMinimal( fusionSeq.getTimePoints(), fusionSetups, wrappedFusionImgLoader, fusionSeq.getMissingViews() );
@@ -269,7 +259,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		final HashMap< Integer, ExportMipmapInfo > aggregateMipmapInfos = new HashMap< Integer, ExportMipmapInfo >( perSetupExportMipmapInfo );
 		for ( final BasicViewSetup s : existingSequence.getViewSetupsOrdered() )
 		{
-			final MipmapInfo info = existingHdf5Loader.getMipmapInfo( s.getId() );
+			final MipmapInfo info = existingHdf5Loader.getSetupImgLoader( s.getId() ).getMipmapInfo();
 			aggregateMipmapInfos.put(
 					s.getId(),
 					new ExportMipmapInfo( Util.castToInts( info.getResolutions() ), info.getSubdivisions() ) );

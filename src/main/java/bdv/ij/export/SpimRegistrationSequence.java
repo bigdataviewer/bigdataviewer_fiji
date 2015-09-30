@@ -31,7 +31,6 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.FinalRealInterval;
 import net.imglib2.RealInterval;
 import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import spimopener.SPIMExperiment;
 import bdv.ij.export.imgloader.HuiskenImageLoader;
 import bdv.ij.export.imgloader.StackImageLoader;
@@ -53,7 +52,7 @@ public class SpimRegistrationSequence
 		final TimePoints timepoints = createTimePoints( conf );
 
 
-		final BasicImgLoader< UnsignedShortType > imgLoader = createImageLoader( conf, setups );
+		final BasicImgLoader imgLoader = createImageLoader( conf, setups );
 
 		viewRegistrations = createViewRegistrations( conf, setups );
 		sequenceDescription = new SequenceDescriptionMinimal( timepoints, Entity.idMap( createViewSetups( conf ) ), imgLoader, null );
@@ -79,7 +78,7 @@ public class SpimRegistrationSequence
 		return viewRegistrations;
 	}
 
-	protected static BasicImgLoader< UnsignedShortType > createImageLoader( final SPIMConfiguration conf, final ArrayList< ViewSetup > setups )
+	protected static BasicImgLoader createImageLoader( final SPIMConfiguration conf, final ArrayList< ViewSetup > setups )
 	{
 		final int numTimepoints = conf.timepoints.length;
 		final HashMap< ViewId, String > filenames = new HashMap< ViewId, String >();

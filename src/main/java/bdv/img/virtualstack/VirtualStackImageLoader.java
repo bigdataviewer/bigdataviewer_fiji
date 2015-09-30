@@ -1,6 +1,11 @@
 package bdv.img.virtualstack;
 
 import ij.ImagePlus;
+
+import java.util.ArrayList;
+
+import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
+import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
 import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Volatile;
@@ -21,7 +26,8 @@ import net.imglib2.type.volatiles.VolatileFloatType;
 import net.imglib2.type.volatiles.VolatileUnsignedByteType;
 import net.imglib2.type.volatiles.VolatileUnsignedShortType;
 import net.imglib2.util.Fraction;
-import bdv.AbstractViewerImgLoader;
+import bdv.AbstractViewerSetupImgLoader;
+import bdv.ViewerImgLoader;
 import bdv.img.cache.CacheArrayLoader;
 import bdv.img.cache.CacheHints;
 import bdv.img.cache.CachedCellImg;
@@ -54,7 +60,7 @@ import bdv.img.cache.VolatileImgCells.CellCache;
  * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
  */
 public abstract class VirtualStackImageLoader< T extends NativeType< T >, V extends Volatile< T > & NativeType< V >, A extends VolatileAccess >
-		extends AbstractViewerImgLoader< T, V >
+		implements ViewerImgLoader, TypedBasicImgLoader< T >
 {
 	public static VirtualStackImageLoader< FloatType, VolatileFloatType, VolatileFloatArray > createFloatInstance( final ImagePlus imp )
 	{
@@ -136,20 +142,27 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 
 	private static AffineTransform3D[] mipmapTransforms = new AffineTransform3D[] { new AffineTransform3D() };
 
-	private final VolatileGlobalCellCache< A > cache;
+	private final CacheArrayLoader< A > loader;
+
+	private final VolatileGlobalCellCache cache;
 
 	private final long[] dimensions;
 
 	private final int[] cellDimensions;
 
+	private final ArrayList< SetupImgLoader > setupImgLoaders;
+
 	protected VirtualStackImageLoader( final ImagePlus imp, final CacheArrayLoader< A > loader, final T type, final V volatileType )
 	{
-		super( type, volatileType );
+		this.loader = loader;
 		dimensions = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
 		cellDimensions = new int[] { imp.getWidth(), imp.getHeight(), 1 };
 		final int numTimepoints = imp.getNFrames();
 		final int numSetups = imp.getNChannels();
-		cache = new VolatileGlobalCellCache< A >( loader, numTimepoints, numSetups, 1, 1 );
+		cache = new VolatileGlobalCellCache( numTimepoints, numSetups, 1, 1 );
+		setupImgLoaders = new ArrayList< SetupImgLoader >();
+		for ( int setupId = 0; setupId < numSetups; ++setupId )
+			setupImgLoaders.add( new SetupImgLoader( setupId, type, volatileType ) );
 	}
 
 	protected abstract void linkType( CachedCellImg< T, A > img );
@@ -157,58 +170,77 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 	protected abstract void linkVolatileType( CachedCellImg< V, A > img );
 
 	@Override
-	public RandomAccessibleInterval< T > getImage( final ViewId view, final int level )
-	{
-		final CachedCellImg< T, A > img = prepareCachedImage( view, level, LoadingStrategy.BLOCKING );
-		linkType( img );
-		return img;
-	}
-
-	@Override
-	public RandomAccessibleInterval< V > getVolatileImage( final ViewId view, final int level )
-	{
-		final CachedCellImg< V, A > img = prepareCachedImage( view, level, LoadingStrategy.BUDGETED );
-		linkVolatileType( img );
-		return img;
-	}
-
-	@Override
-	public double[][] getMipmapResolutions( final int setup )
-	{
-		return mipmapResolutions;
-	}
-
-	@Override
-	public AffineTransform3D[] getMipmapTransforms( final int setup )
-	{
-		return mipmapTransforms;
-	}
-
-	@Override
-	public int numMipmapLevels( final int setup )
-	{
-		return 1;
-	}
-
-	@Override
-	public VolatileGlobalCellCache< A > getCache()
+	public VolatileGlobalCellCache getCache()
 	{
 		return cache;
 	}
 
-	/**
-	 * (Almost) create a {@link CachedCellImg} backed by the cache. The created
-	 * image needs a {@link NativeImg#setLinkedType(net.imglib2.type.Type)
-	 * linked type} before it can be used. The type should be either
-	 * {@link ARGBType} and {@link VolatileARGBType}.
-	 */
-	protected < T extends NativeType< T > > CachedCellImg< T, A > prepareCachedImage( final ViewId view, final int level, final LoadingStrategy loadingStrategy )
+	@Override
+	public SetupImgLoader getSetupImgLoader( final int setupId )
 	{
-		final int priority = 0;
-		final CacheHints cacheHints = new CacheHints( loadingStrategy, priority, false );
-		final CellCache< A > c = cache.new VolatileCellCache( view.getTimePointId(), view.getViewSetupId(), level, cacheHints );
-		final VolatileImgCells< A > cells = new VolatileImgCells< A >( c, new Fraction(), dimensions, cellDimensions );
-		final CachedCellImg< T, A > img = new CachedCellImg< T, A >( cells );
-		return img;
+		return setupImgLoaders.get( setupId );
+	}
+
+	public class SetupImgLoader extends AbstractViewerSetupImgLoader< T, V >
+	{
+		private final int setupId;
+
+		protected SetupImgLoader( final int setupId, final T type, final V volatileType )
+		{
+			super( type, volatileType );
+			this.setupId = setupId;
+		}
+
+		@Override
+		public RandomAccessibleInterval< V > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
+		{
+			final ViewId view = new ViewId( timepointId, setupId );
+			final CachedCellImg< V, A > img = prepareCachedImage( view, level, LoadingStrategy.BUDGETED );
+			linkVolatileType( img );
+			return img;
+		}
+
+		@Override
+		public RandomAccessibleInterval< T > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
+		{
+			final ViewId view = new ViewId( timepointId, setupId );
+			final CachedCellImg< T, A > img = prepareCachedImage( view, level, LoadingStrategy.BLOCKING );
+			linkType( img );
+			return img;
+		}
+
+		/**
+		 * (Almost) create a {@link CachedCellImg} backed by the cache. The created
+		 * image needs a {@link NativeImg#setLinkedType(net.imglib2.type.Type)
+		 * linked type} before it can be used. The type should be either
+		 * {@link ARGBType} and {@link VolatileARGBType}.
+		 */
+		protected < T extends NativeType< T > > CachedCellImg< T, A > prepareCachedImage( final ViewId view, final int level, final LoadingStrategy loadingStrategy )
+		{
+			final int priority = 0;
+			final CacheHints cacheHints = new CacheHints( loadingStrategy, priority, false );
+			final CellCache< A > c = cache.new VolatileCellCache< A >( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+			final VolatileImgCells< A > cells = new VolatileImgCells< A >( c, new Fraction(), dimensions, cellDimensions );
+			final CachedCellImg< T, A > img = new CachedCellImg< T, A >( cells );
+			return img;
+		}
+
+		@Override
+		public double[][] getMipmapResolutions()
+		{
+			return mipmapResolutions;
+		}
+
+		@Override
+		public AffineTransform3D[] getMipmapTransforms()
+		{
+			return mipmapTransforms;
+		}
+
+		@Override
+		public int numMipmapLevels()
+		{
+			return 1;
+		}
 	}
 }
