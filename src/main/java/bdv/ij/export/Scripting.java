@@ -127,7 +127,7 @@ public class Scripting
 	 * @param numSlices
 	 * @param sliceValueMin
 	 * @param sliceValueMax
-	 * @param fusionTransform
+	 * @param fusionTransforms
 	 * @return
 	 */
 	public static FusionResult createFusionResult(
@@ -150,10 +150,10 @@ public class Scripting
 	 *            represents the full dataset.
 	 * @param timepointsPerPartition
 	 *            how many timepoints should each partition contain (if this is
-	 *            &leq;0, put do not split timepoints across partitions).
+	 *            &le;0, put do not split timepoints across partitions).
 	 * @param setupsPerPartition
 	 *            how many setups should each partition contain (if this is
-	 *            &leq;0, put do not split setups across partitions).
+	 *            &le;0, put do not split setups across partitions).
 	 * @param xmlFilename
 	 *            path to the xml file to which the sequence will be saved. This
 	 *            is used to generate paths for the partitions.

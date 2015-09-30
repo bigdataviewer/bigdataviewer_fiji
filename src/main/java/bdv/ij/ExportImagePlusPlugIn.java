@@ -49,7 +49,7 @@ import bdv.spimdata.XmlIoSpimDataMinimal;
 /**
  * ImageJ plugin to export the current image to xml/hdf5.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class ExportImagePlusPlugIn implements PlugIn
 {

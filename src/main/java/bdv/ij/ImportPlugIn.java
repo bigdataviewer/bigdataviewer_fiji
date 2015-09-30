@@ -35,7 +35,7 @@ import bdv.spimdata.XmlIoSpimDataMinimal;
 /**
  * ImageJ plugin to import a raw image from xml/hdf5.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class ImportPlugIn implements PlugIn
 {

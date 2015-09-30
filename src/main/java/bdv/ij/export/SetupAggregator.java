@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import mpicbg.spim.data.generic.XmlIoAbstractSpimData;
 import mpicbg.spim.data.generic.base.Entity;
 import mpicbg.spim.data.generic.sequence.AbstractSequenceDescription;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
@@ -18,13 +19,11 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.img.cell.CellImg;
-import net.imglib2.realtransform.AffineTransform3D;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.util.PluginHelper;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
-import bdv.spimdata.XmlIoSpimDataMinimal;
 
 /**
  * Aggregate {@link BasicViewSetup setups}, i.e., SPIM source angles and fused
@@ -33,7 +32,7 @@ import bdv.spimdata.XmlIoSpimDataMinimal;
  *
  * Note, that added setups are assigned new, consecutive ids starting from 0.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class SetupAggregator
 {
@@ -136,7 +135,7 @@ public class SetupAggregator
 	 * Create a {@link SpimDataMinimal} for the setups currently aggregated.
 	 * This can be used to write the sequence (see {@link WriteSequenceToHdf5}
 	 * and
-	 * {@link XmlIoSpimDataMinimal#toXml(bdv.spimdata.SpimDataMinimal, File)}.
+	 * {@link XmlIoAbstractSpimData#toXml(mpicbg.spim.data.generic.AbstractSpimData, File)}
 	 *
 	 * @param basePath
 	 * @return a {@link SpimDataMinimal} with the currently aggregated setups.
@@ -170,7 +169,7 @@ public class SetupAggregator
 	 *
 	 * @param sequence
 	 *            a registered spim sequence. see
-	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, int, boolean, double)}
+	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, String, int, boolean, double)}
 	 * @param setupIndex
 	 *            which of the setups of the spim sequence to add.
 	 * @param resolutionsString
@@ -213,7 +212,7 @@ public class SetupAggregator
 	 *
 	 * @param sequence
 	 *            a registered spim sequence. see
-	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, int, boolean, double)}
+	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, String, int, boolean, double)}
 	 * @param setupIndex
 	 *            which of the setups of the spim sequence to add.
 	 * @param resolutions
@@ -248,7 +247,7 @@ public class SetupAggregator
 	 *
 	 * @param sequence
 	 *            a registered spim sequence. see
-	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, int, boolean, double)}
+	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, String, int, boolean, double)}
 	 * @param resolutionsString
 	 *            the set of resolutions to store, formatted like
 	 *            "{1,1,1}, {2,2,1}, {4,4,4}" where each "{...}" defines one
@@ -279,7 +278,7 @@ public class SetupAggregator
 	 *
 	 * @param sequence
 	 *            a registered spim sequence. see
-	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, int, boolean, double)}
+	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, String, int, boolean, double)}
 	 * @param resolutions
 	 *            the set of resolutions to store. each nested int[] array
 	 *            defines one resolution.
@@ -308,7 +307,7 @@ public class SetupAggregator
 	 *
 	 * @param fusionResult
 	 *            a fused spim sequence.
-	 *            {@link Scripting#createFusionResult(SpimRegistrationSequence, String, String, int, double, double, AffineTransform3D)}
+	 *            {@link Scripting#createFusionResult(SpimRegistrationSequence, String, String, int, double, double, Map)}
 	 * @param resolutionsString
 	 *            the set of resolutions to store, formatted like
 	 *            "{1,1,1}, {2,2,1}, {4,4,4}" where each "{...}" defines one
@@ -347,7 +346,7 @@ public class SetupAggregator
 	 *
 	 * @param fusionResult
 	 *            a fused spim sequence.
-	 *            {@link Scripting#createFusionResult(SpimRegistrationSequence, String, String, int, double, double, AffineTransform3D)}
+	 *            {@link Scripting#createSpimRegistrationSequence(String, String, String, String, String, int, boolean, double)}
 	 * @param resolutions
 	 *            the set of resolutions to store. each nested int[] array
 	 *            defines one resolution.

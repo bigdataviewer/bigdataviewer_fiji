@@ -38,7 +38,7 @@ import bdv.viewer.VisibilityAndGrouping;
 /**
  * ImageJ plugin to show the current image in BigDataViewer.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class OpenImagePlusPlugIn implements PlugIn
 {

@@ -24,7 +24,7 @@ import spimopener.SPIMExperiment;
  * <a href="http://fiji.sc/javadoc/spimopener/package-summary.html">spimopener</a>
  * to load images in Jan Husiken's format.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class HuiskenImageLoader implements BasicImgLoader
 {

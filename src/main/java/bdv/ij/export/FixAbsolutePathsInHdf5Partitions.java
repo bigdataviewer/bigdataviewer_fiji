@@ -27,7 +27,7 @@ import bdv.spimdata.XmlIoSpimDataMinimal;
  * be written (the original master hdf5 will not be overwritten). To actually
  * use the fixed version rename it (remove the "FIXED" postfix).
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class FixAbsolutePathsInHdf5Partitions
 {

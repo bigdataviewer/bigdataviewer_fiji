@@ -4,6 +4,7 @@ import ij.ImagePlus;
 
 import java.util.ArrayList;
 
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
 import mpicbg.spim.data.sequence.ViewId;
@@ -46,9 +47,10 @@ import bdv.img.cache.VolatileImgCells.CellCache;
  * {@link #createUnsignedShortInstance(ImagePlus)} depending on the ImagePlus
  * pixel type.
  *
- * When {@link #getImage(ViewId) loading images}, the provided setup id is used
- * as the channel index of the {@link ImagePlus}, the provided timepoint id is
- * used as the frame index of the {@link ImagePlus}.
+ * When loading images ({@link #getSetupImgLoader(int)},
+ * {@link BasicSetupImgLoader#getImage(int, ImgLoaderHint...)}) the provided
+ * setup id is used as the channel index of the {@link ImagePlus}, the provided
+ * timepoint id is used as the frame index of the {@link ImagePlus}.
  *
  * @param <T>
  *            (non-volatile) pixel type
@@ -57,7 +59,7 @@ import bdv.img.cache.VolatileImgCells.CellCache;
  * @param <A>
  *            volatile array access type
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public abstract class VirtualStackImageLoader< T extends NativeType< T >, V extends Volatile< T > & NativeType< V >, A extends VolatileAccess >
 		implements ViewerImgLoader, TypedBasicImgLoader< T >

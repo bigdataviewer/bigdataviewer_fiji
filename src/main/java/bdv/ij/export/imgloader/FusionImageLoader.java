@@ -7,6 +7,7 @@ import io.scif.img.ImgOpener;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.ImgLoader;
@@ -35,15 +36,15 @@ import net.imglib2.view.Views;
  * This {@link ImgLoader} loads images that represent a 3D stack as a sequence
  * of slice with one image file per slice, such as created by Stephan
  * Preibisch's Multi-view fusion plugin. It is constructed with the pattern of
- * the image filenames. Then, to laod the image for a given {@link ViewDescription}, its
- * TODO timepoint? index?, channel, and slice indices are filled into the
- * template to get the slice filenames.
+ * the image filenames. Then, to laod the image for a given
+ * {@link ViewDescription}, its TODO timepoint? index?, channel, and slice
+ * indices are filled into the template to get the slice filenames.
  *
  * This {@link ImgLoader} is used for exporting spim sequences to hdf5. Only the
- * {@link #getImage(ViewDescription)} method is implemented because this is
- * the only method required for exporting to hdf5.
+ * {@link BasicSetupImgLoader#getImage(int, ImgLoaderHint...)} method is
+ * implemented because this is the only method required for exporting to hdf5.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 {
@@ -201,6 +202,5 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 		{
 			return new FinalVoxelDimensions( "px", 1, 1, 1 );
 		}
-
 	}
 }

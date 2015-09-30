@@ -11,7 +11,7 @@ import mpicbg.spim.data.sequence.ViewSetup;
  * Stores the {@link ViewSetup setup}'s original id and {@link SequenceDescription}.
  * For example, this can be used to access the original {@link ImgLoader}.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class ViewSetupWrapper extends BasicViewSetup
 {

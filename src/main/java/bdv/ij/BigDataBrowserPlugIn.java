@@ -37,7 +37,7 @@ import bdv.ij.util.ProgressWriterIJ;
 import com.google.gson.stream.JsonReader;
 
 /**
- * @author HongKee Moon <moon@mpi-cbg.de>
+ * @author HongKee Moon &lt;moon@mpi-cbg.de&gt;
  */
 public class BigDataBrowserPlugIn implements PlugIn
 {

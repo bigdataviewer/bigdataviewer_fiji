@@ -8,7 +8,6 @@ import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
-import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.stats.ComputeMinMax;
 import net.imglib2.converter.Converter;
@@ -31,11 +30,12 @@ import bdv.img.virtualstack.VirtualStackImageLoader;
  * Internally it relies on {@link VirtualStackImageLoader} to be able to handle
  * large virtual stacks.
  *
- * When {@link #getImage(ViewId) loading images}, the provided setup id is used
- * as the channel index of the {@link ImagePlus}, the provided timepoint id is
- * used as the frame index of the {@link ImagePlus}.
+ * When loading images ({@link #getSetupImgLoader(int)},
+ * {@link BasicSetupImgLoader#getImage(int, ImgLoaderHint...)}) the provided
+ * setup id is used as the channel index of the {@link ImagePlus}, the provided
+ * timepoint id is used as the frame index of the {@link ImagePlus}.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgLoader< T >
 {

@@ -33,7 +33,7 @@ import org.scijava.app.StatusService;
  * image for a given {@link ViewDescription}, its index in the filename list is computed as
  * <code>view.getSetupIndex() + numViewSetups * view.getTimepointIndex()</code>.
  *
- * @author Tobias Pietzsch <tobias.pietzsch@gmail.com>
+ * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
 public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedShortType >
 {
