@@ -65,10 +65,10 @@
 	</repositories>
 
 	<scm>
-		<connection>scm:git:git://github.com/tpietzsch/spimviewer</connection>
-		<developerConnection>scm:git:git@github.com:tpietzsch/spimviewer</developerConnection>
+		<connection>scm:git:git://github.com/bigdataviewer/bigdataviewer_fiji</connection>
+		<developerConnection>scm:git:git@github.com:bigdataviewer/bigdataviewer_fiji</developerConnection>
 		<tag>HEAD</tag>
-		<url>https://github.com/tpietzsch/spimviewer</url>
+		<url>https://github.com/bigdataviewer/bigdataviewer_fiji</url>
 	</scm>
 
 	<build>
