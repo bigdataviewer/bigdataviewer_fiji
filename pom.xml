@@ -76,6 +76,14 @@
 		<tag>HEAD</tag>
 		<url>https://github.com/bigdataviewer/bigdataviewer_fiji</url>
 	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/bigdataviewer/bigdataviewer_fiji/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Jenkins</system>
+		<url>http://jenkins.imagej.net/job/bigdataviewer_fiji/</url>
+	</ciManagement>
 
 	<properties>
 		<scijava.jvm.version>1.7</scijava.jvm.version>
