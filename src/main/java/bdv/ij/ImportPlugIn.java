@@ -1,14 +1,6 @@
 package bdv.ij;
 
 import static mpicbg.spim.data.generic.sequence.ImgLoaderHints.LOAD_COMPLETELY;
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
-import ij.ImageJ;
-import ij.ImagePlus;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
-import ij.measure.Calibration;
-import ij.plugin.PlugIn;
 
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
@@ -18,6 +10,18 @@ import java.awt.event.TextEvent;
 import java.io.File;
 import java.util.List;
 
+import bdv.ViewerImgLoader;
+import bdv.spimdata.SequenceDescriptionMinimal;
+import bdv.spimdata.SpimDataMinimal;
+import bdv.spimdata.XmlIoSpimDataMinimal;
+import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
+import ij.ImageJ;
+import ij.ImagePlus;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.measure.Calibration;
+import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicMultiResolutionImgLoader;
@@ -27,10 +31,6 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.NumericType;
-import bdv.ViewerImgLoader;
-import bdv.spimdata.SequenceDescriptionMinimal;
-import bdv.spimdata.SpimDataMinimal;
-import bdv.spimdata.XmlIoSpimDataMinimal;
 
 /**
  * ImageJ plugin to import a raw image from xml/hdf5.
@@ -174,6 +174,7 @@ public class ImportPlugIn implements PlugIn
 				final ImgLoaderHint[] hints = openAsVirtualStack ? new ImgLoaderHint[ 0 ] : new ImgLoaderHint[] { LOAD_COMPLETELY };
 
 				final RandomAccessibleInterval< ? > img;
+				final double[] mipmapResolution;
 				if ( il instanceof BasicMultiResolutionImgLoader )
 				{
 					final BasicMultiResolutionImgLoader mil = ( BasicMultiResolutionImgLoader ) il;
@@ -181,9 +182,13 @@ public class ImportPlugIn implements PlugIn
 					if ( mipmap >= numMipmapLevels )
 						mipmap = numMipmapLevels - 1;
 					img = mil.getSetupImgLoader( setupId ).getImage( timepointId, mipmap, hints );
+					mipmapResolution = mil.getSetupImgLoader( setupId ).getMipmapResolutions()[ mipmap ];
 				}
 				else
+				{
 					img = il.getSetupImgLoader( setupId ).getImage( timepointId, hints );
+					mipmapResolution = new double[] { 1, 1, 1 };
+				}
 
 				@SuppressWarnings( { "unchecked", "rawtypes" } )
 				ImagePlus imp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( ( RandomAccessibleInterval< NumericType > ) img, "" );
@@ -196,9 +201,9 @@ public class ImportPlugIn implements PlugIn
 				{
 					final Calibration calibration = imp.getCalibration();
 					calibration.setUnit( voxelSize.unit() );
-					calibration.pixelWidth = voxelSize.dimension( 0 );
-					calibration.pixelHeight = voxelSize.dimension( 1 );
-					calibration.pixelDepth = voxelSize.dimension( 2 );
+					calibration.pixelWidth = voxelSize.dimension( 0 ) * mipmapResolution[ 0 ];
+					calibration.pixelHeight = voxelSize.dimension( 1 ) * mipmapResolution[ 1 ];
+					calibration.pixelDepth = voxelSize.dimension( 2 ) * mipmapResolution[ 2 ];
 				}
 				imp.show();
 			}
