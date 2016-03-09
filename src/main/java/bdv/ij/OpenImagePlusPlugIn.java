@@ -1,5 +1,21 @@
 package bdv.ij;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import bdv.BigDataViewer;
+import bdv.ij.util.ProgressWriterIJ;
+import bdv.img.imagestack.ImageStackImageLoader;
+import bdv.img.virtualstack.VirtualStackImageLoader;
+import bdv.spimdata.SequenceDescriptionMinimal;
+import bdv.spimdata.SpimDataMinimal;
+import bdv.spimdata.WrapBasicImgLoader;
+import bdv.tools.brightness.ConverterSetup;
+import bdv.tools.brightness.SetupAssignments;
+import bdv.viewer.DisplayMode;
+import bdv.viewer.ViewerOptions;
+import bdv.viewer.VisibilityAndGrouping;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImageJ;
@@ -7,11 +23,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
 import ij.process.LUT;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -23,17 +34,6 @@ import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
-import bdv.BigDataViewer;
-import bdv.ij.util.ProgressWriterIJ;
-import bdv.img.imagestack.ImageStackImageLoader;
-import bdv.img.virtualstack.VirtualStackImageLoader;
-import bdv.spimdata.SequenceDescriptionMinimal;
-import bdv.spimdata.SpimDataMinimal;
-import bdv.spimdata.WrapBasicImgLoader;
-import bdv.tools.brightness.ConverterSetup;
-import bdv.tools.brightness.SetupAssignments;
-import bdv.viewer.DisplayMode;
-import bdv.viewer.VisibilityAndGrouping;
 
 /**
  * ImageJ plugin to show the current image in BigDataViewer.
@@ -174,7 +174,7 @@ public class OpenImagePlusPlugIn implements PlugIn
 		final SpimDataMinimal spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
 		WrapBasicImgLoader.wrapImgLoaderIfNecessary( spimData );
 
-		final BigDataViewer bdv = new BigDataViewer( spimData, "BigDataViewer", new ProgressWriterIJ() );
+		final BigDataViewer bdv = BigDataViewer.open( spimData, "BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
 		final SetupAssignments sa = bdv.getSetupAssignments();
 		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
 		if ( imp.isComposite() )
