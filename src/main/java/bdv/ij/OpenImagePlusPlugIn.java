@@ -179,8 +179,8 @@ public class OpenImagePlusPlugIn implements PlugIn
 		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
 		if ( imp.isComposite() )
 			transferChannelSettings( ( CompositeImage ) imp, sa, vg );
-		else if ( imp.getType() == ImagePlus.COLOR_RGB )
-			transferSettingsRGB( imp, sa );
+		else
+			transferImpSettings( imp, sa );
 	}
 
 	protected void transferChannelSettings( final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
@@ -208,7 +208,7 @@ public class OpenImagePlusPlugIn implements PlugIn
 		visibility.setCurrentSource( ci.getChannel() - 1 );
 	}
 
-	protected void transferSettingsRGB( final ImagePlus imp, final SetupAssignments setupAssignments )
+	protected void transferImpSettings( final ImagePlus imp, final SetupAssignments setupAssignments )
 	{
 		final ConverterSetup setup = setupAssignments.getConverterSetups().get( 0 );
 		setup.setDisplayRange( imp.getDisplayRangeMin(), imp.getDisplayRangeMax() );
