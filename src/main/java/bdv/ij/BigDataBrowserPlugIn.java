@@ -10,15 +10,21 @@ import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -60,34 +66,123 @@ public class BigDataBrowserPlugIn implements PlugIn
 			e.printStackTrace();
 		}
 
-		final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
-				JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
+		if ( null == arg || arg == "" )
+		{
+			final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
+					JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
 
-		if ( remoteUrl == null )
-			return;
+			if ( remoteUrl == null )
+				return;
 
-		serverUrl = remoteUrl.toString();
+			serverUrl = remoteUrl.toString();
+		}
+		else
+		{
+			String line = null;
+			FileReader fileReader = null;
 
-		final ArrayList< String > nameList = new ArrayList< String >();
+			try
+			{
+				fileReader = new FileReader( new File( arg ) );
+			}
+			catch ( FileNotFoundException e )
+			{
+				e.printStackTrace();
+			}
+
+			BufferedReader br = new BufferedReader( fileReader );
+
+			try
+			{
+				if ( ( line = br.readLine() ) != null )
+				{
+					serverUrl = line;
+				}
+			}
+			catch ( IOException e )
+			{
+				e.printStackTrace();
+			}
+
+			if ( line == null )
+				return;
+		}
+
+		final ArrayList< Object > nameList = new ArrayList< Object >();
+		String category = "";
 		try
 		{
-			getDatasetList( serverUrl, nameList );
+
+			if ( serverUrl.indexOf( "/category/" ) > -1 )
+			{
+				String[] tokens = serverUrl.split( "/category/" );
+				serverUrl = tokens[ 0 ];
+				category = tokens[ 1 ];
+			}
+			getDatasetList( serverUrl, nameList, category );
 		}
 		catch ( final IOException e )
 		{
 			IJ.showMessage( "Error connecting to server at " + serverUrl );
 			e.printStackTrace();
 		}
-		createDatasetListUI( serverUrl, nameList.toArray() );
+		createDatasetListUI( category, serverUrl, nameList.toArray() );
 	}
 
-	private boolean getDatasetList( final String remoteUrl, final ArrayList< String > nameList ) throws IOException
+	class DataSet
+	{
+		private final String name;
+		private final String description;
+		private final String category;
+
+		DataSet( String name, String description, String category )
+		{
+
+			this.name = name;
+			this.description = description;
+			this.category = category;
+		}
+
+		public String getName()
+		{
+			return name;
+		}
+
+		public String getDescription()
+		{
+			return description;
+		}
+
+		public String getCategory()
+		{
+			return category;
+		}
+	}
+
+	class Category
+	{
+		private final String name;
+
+		Category( String name )
+		{
+			this.name = name;
+		}
+
+		public String getName()
+		{
+			return name;
+		}
+	}
+
+	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList, final String searchCategory ) throws IOException
 	{
 		// Get JSON string from the server
-		final URL url = new URL( remoteUrl + "/json/" );
+		final URL url = new URL( remoteUrl + "/json/?category=" + URLEncoder.encode( searchCategory, "UTF-8" ) );
 
 		final InputStream is = url.openStream();
 		final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
+
+		String prevCategory = null;
 
 		reader.beginObject();
 
@@ -98,7 +193,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 			reader.beginObject();
 
-			String id = null, description = null, thumbnailUrl = null, datasetUrl = null;
+			String id = null, category = null, description = null, thumbnailUrl = null, datasetUrl = null;
 			while ( reader.hasNext() )
 			{
 				final String name = reader.nextName();
@@ -110,13 +205,23 @@ public class BigDataBrowserPlugIn implements PlugIn
 					thumbnailUrl = reader.nextString();
 				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
+				else if ( name.equals( "category" ) )
+					category = reader.nextString();
+				else if ( name.equals( "index" ) )
+					reader.nextString();
 				else
 					reader.skipValue();
 			}
 
+			if ( prevCategory == null || !prevCategory.equals( category ) )
+			{
+				prevCategory = category;
+				nameList.add( new Category( prevCategory ) );
+			}
+
 			if ( id != null )
 			{
-				nameList.add( id );
+				nameList.add( new DataSet( id, description, category ) );
 				if ( thumbnailUrl != null && StringUtils.isNotEmpty( thumbnailUrl ) )
 					imageMap.put( id, new ImageIcon( new URL( thumbnailUrl ) ) );
 				if ( datasetUrl != null )
@@ -133,7 +238,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 		return true;
 	}
 
-	private void createDatasetListUI( final String remoteUrl, final Object[] values )
+	private void createDatasetListUI( final String category, final String remoteUrl, final Object[] values )
 	{
 		final JList list = new JList( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
@@ -146,15 +251,20 @@ public class BigDataBrowserPlugIn implements PlugIn
 				if ( evt.getClickCount() == 2 )
 				{
 					final int index = list.locationToIndex( evt.getPoint() );
-					final String key = String.valueOf( list.getModel().getElementAt( index ) );
-					System.out.println( key );
-					try
+					final Object cell = list.getModel().getElementAt( index );
+
+					if ( cell instanceof DataSet )
 					{
-						BigDataViewer.view( datasetUrlMap.get( key ), new ProgressWriterIJ() );
-					}
-					catch ( final SpimDataException e )
-					{
-						e.printStackTrace();
+						DataSet ds = ( DataSet ) cell;
+
+						try
+						{
+							BigDataViewer.view( datasetUrlMap.get( ds.getName() ), new ProgressWriterIJ() );
+						}
+						catch ( final SpimDataException e )
+						{
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -164,7 +274,10 @@ public class BigDataBrowserPlugIn implements PlugIn
 		scroll.setPreferredSize( new Dimension( 600, 800 ) );
 
 		final JFrame frame = new JFrame();
-		frame.setTitle( "BigDataServer Browser - " + remoteUrl );
+		if ( category.equals( "" ) )
+			frame.setTitle( "BigDataServer Browser - " + remoteUrl );
+		else
+			frame.setTitle( "BigDataServer Browser - " + remoteUrl + "/category/" + category );
 		frame.add( scroll );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 		frame.pack();
@@ -176,7 +289,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 	{
 		private static final long serialVersionUID = 1L;
 
-		Font font = new Font( "helvetica", Font.BOLD, 12 );
+		Font font = new Font( "helvetica", Font.PLAIN, 12 );
 
 		@Override
 		public Component getListCellRendererComponent(
@@ -186,9 +299,23 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 			final JLabel label = ( JLabel ) super.getListCellRendererComponent(
 					list, value, index, isSelected, cellHasFocus );
-			label.setIcon( imageMap.get( value ) );
-			label.setHorizontalTextPosition( JLabel.RIGHT );
-			label.setFont( font );
+
+			if ( value instanceof Category )
+			{
+				Category category = ( Category ) value;
+				label.setText( category.getName() );
+				label.setFont( label.getFont().deriveFont( Font.BOLD, 26 ) );
+				label.setBorder( BorderFactory.createEmptyBorder( 0, 5, 0, 0 ) );
+			}
+			else
+			{
+				DataSet ds = ( DataSet ) value;
+				label.setIcon( imageMap.get( ds.getName() ) );
+				label.setText( "<html><b>" + ds.getName() + "</b><br/> " + ds.getDescription() + "</html>" );
+				label.setHorizontalTextPosition( JLabel.RIGHT );
+				label.setFont( font );
+			}
+
 			return label;
 		}
 	}
@@ -196,6 +323,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
+		//new BigDataBrowserPlugIn().run( "/Users/moon/Desktop/local.bdv" );
 		new BigDataBrowserPlugIn().run( null );
 	}
 }
