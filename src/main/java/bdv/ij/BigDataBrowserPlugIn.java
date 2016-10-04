@@ -135,14 +135,14 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 	private void createDatasetListUI( final String remoteUrl, final Object[] values )
 	{
-		final JList list = new JList( values );
+		final JList< ? > list = new JList<>( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
 		list.addMouseListener( new MouseAdapter()
 		{
 			@Override
 			public void mouseClicked( final MouseEvent evt )
 			{
-				final JList list = ( JList ) evt.getSource();
+				final JList< ? > list = ( JList< ? > ) evt.getSource();
 				if ( evt.getClickCount() == 2 )
 				{
 					final int index = list.locationToIndex( evt.getPoint() );
@@ -180,7 +180,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 		@Override
 		public Component getListCellRendererComponent(
-				final JList list, final Object value, final int index,
+				final JList< ? > list, final Object value, final int index,
 				final boolean isSelected, final boolean cellHasFocus )
 		{
 
