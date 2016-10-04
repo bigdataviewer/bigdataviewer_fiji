@@ -1,11 +1,10 @@
 package bdv.ij.export.imgloader;
 
-import ij.ImagePlus;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
@@ -40,7 +39,7 @@ public class HuiskenImageLoader implements BasicImgLoader
 	{
 		expFile = file;
 		exp = null;
-		setupIdToSetupImgLoader = new HashMap< Integer, SetupLoader >();
+		setupIdToSetupImgLoader = new HashMap<>();
 		for ( final Entry< Integer, ViewSetup > entry : setups.entrySet() )
 			setupIdToSetupImgLoader.put( entry.getKey(), new SetupLoader( entry.getValue() ) );
 	}
@@ -98,7 +97,7 @@ public class HuiskenImageLoader implements BasicImgLoader
 			final float zStretching = ( float ) ( exp.pd / exp.pw );
 			final double[] calibration = new double[] { 1, 1, zStretching };
 
-			return new ImgPlus< UnsignedShortType >( img, name, axes, calibration );
+			return new ImgPlus<>( img, name, axes, calibration );
 		}
 
 		@Override

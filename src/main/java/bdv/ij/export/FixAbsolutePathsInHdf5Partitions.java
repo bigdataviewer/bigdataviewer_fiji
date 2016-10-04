@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import mpicbg.spim.data.SpimDataException;
-import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
 import bdv.img.hdf5.Hdf5ImageLoader;
@@ -16,6 +14,8 @@ import bdv.img.hdf5.Util;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import mpicbg.spim.data.SpimDataException;
+import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 
 /**
  * Older versions of multi-partition hdf5 export had a bug that caused absolute
@@ -38,7 +38,7 @@ public class FixAbsolutePathsInHdf5Partitions
 		final SequenceDescriptionMinimal seq = spimData.getSequenceDescription();
 		final Hdf5ImageLoader il = ( Hdf5ImageLoader) seq.getImgLoader();
 		final String outfn = il.getHdf5File().getCanonicalPath() + "FIXED";
-		final HashMap< Integer, ExportMipmapInfo > perSetupMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+		final HashMap< Integer, ExportMipmapInfo > perSetupMipmapInfo = new HashMap<>();
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 		{
 			final int setupId = setup.getId();

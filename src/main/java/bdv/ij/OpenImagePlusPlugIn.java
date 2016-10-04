@@ -148,7 +148,7 @@ public class OpenImagePlusPlugIn implements PlugIn
 		final int numSetups = imp.getNChannels();
 
 		// create setups from channels
-		final HashMap< Integer, BasicViewSetup > setups = new HashMap< Integer, BasicViewSetup >( numSetups );
+		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
 			final BasicViewSetup setup = new BasicViewSetup( s, String.format( "channel %d", s + 1 ), size, voxelSize );
@@ -157,7 +157,7 @@ public class OpenImagePlusPlugIn implements PlugIn
 		}
 
 		// create timepoints
-		final ArrayList< TimePoint > timepoints = new ArrayList< TimePoint >( numTimepoints );
+		final ArrayList< TimePoint > timepoints = new ArrayList<>( numTimepoints );
 		for ( int t = 0; t < numTimepoints; ++t )
 			timepoints.add( new TimePoint( t ) );
 		final SequenceDescriptionMinimal seq = new SequenceDescriptionMinimal( new TimePoints( timepoints ), setups, imgLoader, null );
@@ -165,7 +165,7 @@ public class OpenImagePlusPlugIn implements PlugIn
 		// create ViewRegistrations from the images calibration
 		final AffineTransform3D sourceTransform = new AffineTransform3D();
 		sourceTransform.set( pw, 0, 0, 0, 0, ph, 0, 0, 0, 0, pd, 0 );
-		final ArrayList< ViewRegistration > registrations = new ArrayList< ViewRegistration >();
+		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
 		for ( int t = 0; t < numTimepoints; ++t )
 			for ( int s = 0; s < numSetups; ++s )
 				registrations.add( new ViewRegistration( t, s, sourceTransform ) );

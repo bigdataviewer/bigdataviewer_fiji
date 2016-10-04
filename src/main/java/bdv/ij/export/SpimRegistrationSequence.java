@@ -7,6 +7,9 @@ import java.util.Map;
 
 import org.scijava.vecmath.Point3f;
 
+import bdv.ij.export.imgloader.HuiskenImageLoader;
+import bdv.ij.export.imgloader.StackImageLoader;
+import bdv.spimdata.SequenceDescriptionMinimal;
 import mpicbg.spim.data.generic.base.Entity;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -32,9 +35,6 @@ import net.imglib2.FinalRealInterval;
 import net.imglib2.RealInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 import spimopener.SPIMExperiment;
-import bdv.ij.export.imgloader.HuiskenImageLoader;
-import bdv.ij.export.imgloader.StackImageLoader;
-import bdv.spimdata.SequenceDescriptionMinimal;
 
 public class SpimRegistrationSequence
 {
@@ -81,7 +81,7 @@ public class SpimRegistrationSequence
 	protected static BasicImgLoader createImageLoader( final SPIMConfiguration conf, final ArrayList< ViewSetup > setups )
 	{
 		final int numTimepoints = conf.timepoints.length;
-		final HashMap< ViewId, String > filenames = new HashMap< ViewId, String >();
+		final HashMap< ViewId, String > filenames = new HashMap<>();
 		for ( int timepoint = 0; timepoint < numTimepoints; ++timepoint )
 		{
 			final int timepointId = conf.timepoints[ timepoint ];
@@ -171,7 +171,7 @@ public class SpimRegistrationSequence
 
 	protected static ArrayList< ViewSetup > createViewSetups( final SPIMConfiguration conf )
 	{
-		final ArrayList< ViewSetup > setups = new ArrayList< ViewSetup >();
+		final ArrayList< ViewSetup > setups = new ArrayList<>();
 		int setup_id = 0;
 		for ( int channelIndex = 0; channelIndex < conf.file[ 0 ].length; channelIndex++ )
 			for ( int angleIndex = 0; angleIndex < conf.file[ 0 ][ channelIndex ].length; angleIndex++ )
@@ -216,7 +216,7 @@ public class SpimRegistrationSequence
 
 	protected static TimePoints createTimePoints( final SPIMConfiguration conf )
 	{
-		final ArrayList< TimePoint > timepoints = new ArrayList< TimePoint >();
+		final ArrayList< TimePoint > timepoints = new ArrayList<>();
 		for ( final int tp : conf.timepoints )
 			timepoints.add( new TimePoint( tp ) );
 		return new TimePoints( timepoints );
@@ -229,7 +229,7 @@ public class SpimRegistrationSequence
 		conf.cropOffsetZ = cropOffsetZ;
 		conf.scale = scale;
 
-		final HashMap< Integer, AffineTransform3D > transforms = new HashMap< Integer, AffineTransform3D >();
+		final HashMap< Integer, AffineTransform3D > transforms = new HashMap<>();
 		if ( conf.timeLapseRegistration )
 		{
 			SPIMConfiguration refconf = conf;
@@ -334,7 +334,7 @@ public class SpimRegistrationSequence
 
 	protected static ViewRegistrations createViewRegistrations( final SPIMConfiguration conf, final ArrayList< ViewSetup > setups )
 	{
-		final ArrayList< ViewRegistration > regs = new ArrayList< ViewRegistration >();
+		final ArrayList< ViewRegistration > regs = new ArrayList<>();
 
 		// for each time-point initialize the view structure, load&apply
 		// registrations, instantiate the View objects for Tracking
@@ -376,7 +376,7 @@ public class SpimRegistrationSequence
 
 	protected static ArrayList< Integer > makeList( final int[] ints )
 	{
-		final ArrayList< Integer > list = new ArrayList< Integer >( ints.length );
+		final ArrayList< Integer > list = new ArrayList<>( ints.length );
 		for ( final int i : ints )
 			list.add( i );
 		return list;

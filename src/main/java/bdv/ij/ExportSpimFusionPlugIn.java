@@ -1,14 +1,5 @@
 package bdv.ij;
 
-import fiji.plugin.Bead_Registration;
-import fiji.plugin.Multi_View_Fusion;
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
-
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.TextField;
@@ -26,6 +17,31 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import bdv.export.ExportMipmapInfo;
+import bdv.export.ProgressWriter;
+import bdv.export.ProposeMipmaps;
+import bdv.export.SubTaskProgressWriter;
+import bdv.export.WriteSequenceToHdf5;
+import bdv.ij.export.FusionResult;
+import bdv.ij.export.SpimRegistrationSequence;
+import bdv.ij.export.ViewSetupWrapper;
+import bdv.ij.util.PluginHelper;
+import bdv.ij.util.ProgressWriterIJ;
+import bdv.img.hdf5.Hdf5ImageLoader;
+import bdv.img.hdf5.MipmapInfo;
+import bdv.img.hdf5.Partition;
+import bdv.img.hdf5.Util;
+import bdv.spimdata.SequenceDescriptionMinimal;
+import bdv.spimdata.SpimDataMinimal;
+import bdv.spimdata.XmlIoSpimDataMinimal;
+import fiji.plugin.Bead_Registration;
+import fiji.plugin.Multi_View_Fusion;
+import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
@@ -48,23 +64,6 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 import spimopener.SPIMExperiment;
-import bdv.export.ExportMipmapInfo;
-import bdv.export.ProgressWriter;
-import bdv.export.ProposeMipmaps;
-import bdv.export.SubTaskProgressWriter;
-import bdv.export.WriteSequenceToHdf5;
-import bdv.ij.export.FusionResult;
-import bdv.ij.export.SpimRegistrationSequence;
-import bdv.ij.export.ViewSetupWrapper;
-import bdv.ij.util.PluginHelper;
-import bdv.ij.util.ProgressWriterIJ;
-import bdv.img.hdf5.Hdf5ImageLoader;
-import bdv.img.hdf5.MipmapInfo;
-import bdv.img.hdf5.Partition;
-import bdv.img.hdf5.Util;
-import bdv.spimdata.SequenceDescriptionMinimal;
-import bdv.spimdata.SpimDataMinimal;
-import bdv.spimdata.XmlIoSpimDataMinimal;
 
 public class ExportSpimFusionPlugIn implements PlugIn
 {
@@ -137,27 +136,27 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		final Hdf5ImageLoader existingHdf5Loader = ( Hdf5ImageLoader ) existingSequence.getImgLoader();
 
 		// maps every existing timepoint id to itself, needed for partitions
-		final Map< Integer, Integer > timepointIdentityMap = new HashMap< Integer, Integer >();
+		final Map< Integer, Integer > timepointIdentityMap = new HashMap<>();
 		for ( final TimePoint tp : existingSequence.getTimePoints().getTimePointsOrdered() )
 			timepointIdentityMap.put( tp.getId(), tp.getId() );
 
 		// maps every existing setup id to itself, needed for partitions
-		final Map< Integer, Integer > setupIdentityMap = new HashMap< Integer, Integer >();
+		final Map< Integer, Integer > setupIdentityMap = new HashMap<>();
 		for ( final int s : existingSequence.getViewSetups().keySet() )
 			setupIdentityMap.put( s, s );
 
 		// create partition list for existing dataset
-		final ArrayList< Partition > partitions = new ArrayList< Partition >( existingHdf5Loader.getPartitions() );
+		final ArrayList< Partition > partitions = new ArrayList<>( existingHdf5Loader.getPartitions() );
 		final boolean notYetPartitioned = partitions.isEmpty();
 		if ( notYetPartitioned )
 			// add one partition for the unpartitioned existing dataset
 			partitions.add( new Partition( existingHdf5Loader.getHdf5File().getAbsolutePath(), timepointIdentityMap, setupIdentityMap ) );
 
 		// wrap fused data setups with unused setup ids
-		final HashSet< Integer > usedSetupIds = new HashSet< Integer >( existingSequence.getViewSetups().keySet() );
-		final HashMap< Integer, ViewSetupWrapper > fusionSetups = new HashMap< Integer, ViewSetupWrapper >();
-		final HashMap< Integer, BasicSetupImgLoader< ? > > fusionSetupImgLoaders = new HashMap< Integer, BasicSetupImgLoader< ? > >();
-		final ArrayList< ViewRegistration > fusionRegistrations = new ArrayList< ViewRegistration >();
+		final HashSet< Integer > usedSetupIds = new HashSet<>( existingSequence.getViewSetups().keySet() );
+		final HashMap< Integer, ViewSetupWrapper > fusionSetups = new HashMap<>();
+		final HashMap< Integer, BasicSetupImgLoader< ? > > fusionSetupImgLoaders = new HashMap<>();
+		final ArrayList< ViewRegistration > fusionRegistrations = new ArrayList<>();
 		for ( final BasicViewSetup s : fusionSeq.getViewSetupsOrdered() )
 		{
 			int fusionSetupId = 0;
@@ -190,7 +189,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		fusionReg = new ViewRegistrations( fusionRegistrations );
 
 		// add partitions for the fused data and split if desired
-		final ArrayList< Partition > newPartitions = new ArrayList< Partition >();
+		final ArrayList< Partition > newPartitions = new ArrayList<>();
 		final String xmlFilename = params.seqFile.getAbsolutePath();
 		final String basename = xmlFilename.endsWith( ".xml" ) ? xmlFilename.substring( 0, xmlFilename.length() - 4 ) : xmlFilename;
 		if ( params.split )
@@ -209,7 +208,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		else
 		{
 			final String path = PluginHelper.createNewPartitionFile( basename ).getAbsolutePath();
-			final HashMap< Integer, Integer > setupIdSequenceToPartition = new HashMap< Integer, Integer >();
+			final HashMap< Integer, Integer > setupIdSequenceToPartition = new HashMap<>();
 			for ( final BasicViewSetup s : fusionSeq.getViewSetupsOrdered() )
 				setupIdSequenceToPartition.put( s.getId(), s.getId() );
 			final Partition partition = new Partition( path, timepointIdentityMap, setupIdSequenceToPartition );
@@ -218,7 +217,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		}
 
 		// create ExportMipmapInfos for the fused data setups
-		final Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+		final Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo = new HashMap<>();
 		final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( params.resolutions, params.subdivisions );
 		for ( final BasicViewSetup setup : fusionSeq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
@@ -240,7 +239,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		// TODO: For now the timepoints are just taken from the fusionSeq.
 		// To do it properly, timepoints from existing dataset and fusionSeq should be combined.
 		final TimePoints aggregateTimePoints = fusionSeq.getTimePoints();
-		final HashMap< Integer, BasicViewSetup > aggregateSetups = new HashMap< Integer, BasicViewSetup >();
+		final HashMap< Integer, BasicViewSetup > aggregateSetups = new HashMap<>();
 		for ( final BasicViewSetup s : existingSequence.getViewSetupsOrdered() )
 			aggregateSetups.put( s.getId(), s );
 		for ( final BasicViewSetup s : fusionSeq.getViewSetupsOrdered() )
@@ -256,7 +255,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 				aggregateMissingViews );
 
 		// create aggregate ExportMipmapInfos
-		final HashMap< Integer, ExportMipmapInfo > aggregateMipmapInfos = new HashMap< Integer, ExportMipmapInfo >( perSetupExportMipmapInfo );
+		final HashMap< Integer, ExportMipmapInfo > aggregateMipmapInfos = new HashMap<>( perSetupExportMipmapInfo );
 		for ( final BasicViewSetup s : existingSequence.getViewSetupsOrdered() )
 		{
 			final MipmapInfo info = existingHdf5Loader.getSetupImgLoader( s.getId() ).getMipmapInfo();
@@ -266,7 +265,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		}
 
 		// create aggregate ViewRegistrations
-		final ArrayList< ViewRegistration > regs = new ArrayList< ViewRegistration >();
+		final ArrayList< ViewRegistration > regs = new ArrayList<>();
 		regs.addAll( existingSpimData.getViewRegistrations().getViewRegistrationsOrdered() );
 		regs.addAll( fusionReg.getViewRegistrationsOrdered() );
 		final ViewRegistrations aggregateViewRegistrstions = new ViewRegistrations( regs );
@@ -312,7 +311,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		final SequenceDescriptionMinimal desc = fusionResult.getSequenceDescription();
 
 		// create ExportMipmapInfos
-		final Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+		final Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo = new HashMap<>();
 		final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( params.resolutions, params.subdivisions );
 		for ( final BasicViewSetup setup : desc.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
@@ -571,7 +570,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 		else
 		{
 			numChannels = 1;
-			channels = new ArrayList<Integer>();
+			channels = new ArrayList<>();
 			channels.add( 0 );
 		}
 
@@ -614,7 +613,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 
 		// test which registration files are there for each channel
 		// file = new File[ timepoints.length ][ channels.length ][ angles.length ];
-		final ArrayList<ArrayList<Integer>> timepoints = new ArrayList<ArrayList<Integer>>();
+		final ArrayList<ArrayList<Integer>> timepoints = new ArrayList<>();
 		int numChoices = 0;
 		conf.zStretching = -1;
 
@@ -987,7 +986,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 			final Pair< String, Integer > pair = detectPatternAndNumSlices( subdir, someTimepoint );
 			if ( pair == null )
 				return null;
-			return new ValuePair< String, Integer >( "%1$d/" + pair.getA(), pair.getB() );
+			return new ValuePair<>( "%1$d/" + pair.getA(), pair.getB() );
 		}
 
 		String zeros = "";
@@ -1028,7 +1027,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 				final int numSlices = files2.length;
 				IOFunctions.println( "detected numSlices = " + numSlices );
 
-				return new ValuePair< String, Integer >( pattern, new Integer( numSlices ) );
+				return new ValuePair<>( pattern, new Integer( numSlices ) );
 			}
 		}
 		return null;

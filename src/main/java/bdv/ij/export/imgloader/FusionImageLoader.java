@@ -1,12 +1,11 @@
 package bdv.ij.export.imgloader;
 
-import ij.ImagePlus;
-import io.scif.img.ImgIOException;
-import io.scif.img.ImgOpener;
-
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import ij.ImagePlus;
+import io.scif.img.ImgIOException;
+import io.scif.img.ImgOpener;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
@@ -72,10 +71,10 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 		this.pattern = pattern;
 		this.numSlices = numSlices;
 		this.sliceLoader = sliceLoader;
-		converter = new RealUnsignedShortConverter< T >( sliceValueMin, sliceValueMax );
+		converter = new RealUnsignedShortConverter<>( sliceValueMin, sliceValueMax );
 		this.factory = factory;
 		type = new UnsignedShortType();
-		setupIdToSetupImgLoader = new HashMap< Integer, SetupLoader >();
+		setupIdToSetupImgLoader = new HashMap<>();
 		for ( final Entry< Integer, Integer > entry : setupIdToChannelId.entrySet() )
 			setupIdToSetupImgLoader.put( entry.getKey(), new SetupLoader( entry.getValue() ) );
 	}
@@ -96,7 +95,7 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 		public ArrayImgLoader( final T type )
 		{
 			opener = new ImgOpener();
-			factory = new ArrayImgFactory< T >();
+			factory = new ArrayImgFactory<>();
 			this.type = type;
 		}
 

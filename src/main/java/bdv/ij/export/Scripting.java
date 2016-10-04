@@ -5,9 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import mpicbg.spim.data.SpimDataException;
-import mpicbg.spim.io.ConfigurationParserException;
-import net.imglib2.realtransform.AffineTransform3D;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.util.PluginHelper;
@@ -16,6 +13,9 @@ import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import mpicbg.spim.data.SpimDataException;
+import mpicbg.spim.io.ConfigurationParserException;
+import net.imglib2.realtransform.AffineTransform3D;
 
 public class Scripting
 {
@@ -193,7 +193,7 @@ public class Scripting
 			spimData = aggregator.createSpimData( seqFile );
 			perSetupMipmapInfo = aggregator.getPerSetupMipmapInfo();
 			this.deflate = deflate;
-			this.partitions = new ArrayList< Partition >( partitions );
+			this.partitions = new ArrayList<>( partitions );
 		}
 
 		public int numPartitions()

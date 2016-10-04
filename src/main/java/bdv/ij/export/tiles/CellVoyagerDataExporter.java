@@ -1,25 +1,10 @@
 package bdv.ij.export.tiles;
 
-import ij.IJ;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import mpicbg.spim.data.generic.base.Entity;
-import mpicbg.spim.data.generic.sequence.BasicViewSetup;
-import mpicbg.spim.data.registration.ViewRegistration;
-import mpicbg.spim.data.registration.ViewRegistrations;
-import mpicbg.spim.data.sequence.Channel;
-import mpicbg.spim.data.sequence.FinalVoxelDimensions;
-import mpicbg.spim.data.sequence.TimePoint;
-import mpicbg.spim.data.sequence.TimePoints;
-import mpicbg.spim.data.sequence.VoxelDimensions;
-import net.imglib2.Dimensions;
-import net.imglib2.FinalDimensions;
-import net.imglib2.realtransform.AffineTransform3D;
 
 import org.jdom2.Document;
 import org.jdom2.Element;
@@ -33,6 +18,19 @@ import bdv.img.hdf5.Hdf5ImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import ij.IJ;
+import mpicbg.spim.data.generic.base.Entity;
+import mpicbg.spim.data.generic.sequence.BasicViewSetup;
+import mpicbg.spim.data.registration.ViewRegistration;
+import mpicbg.spim.data.registration.ViewRegistrations;
+import mpicbg.spim.data.sequence.Channel;
+import mpicbg.spim.data.sequence.FinalVoxelDimensions;
+import mpicbg.spim.data.sequence.TimePoint;
+import mpicbg.spim.data.sequence.TimePoints;
+import mpicbg.spim.data.sequence.VoxelDimensions;
+import net.imglib2.Dimensions;
+import net.imglib2.FinalDimensions;
+import net.imglib2.realtransform.AffineTransform3D;
 
 public class CellVoyagerDataExporter
 {
@@ -91,7 +89,7 @@ public class CellVoyagerDataExporter
 
 	public List< ChannelInfo > readInfo()
 	{
-		final List< ChannelInfo > channels = new ArrayList< ChannelInfo >();
+		final List< ChannelInfo > channels = new ArrayList<>();
 
 		final Element root = document.getRootElement();
 
@@ -161,7 +159,7 @@ public class CellVoyagerDataExporter
 			double ymin = Double.POSITIVE_INFINITY;
 			double xmax = Double.NEGATIVE_INFINITY;
 			double ymax = Double.NEGATIVE_INFINITY;
-			final ArrayList< double[] > offsetsUm = new ArrayList< double[] >();
+			final ArrayList< double[] > offsetsUm = new ArrayList<>();
 			for ( final Element fieldElement : fieldElements )
 			{
 
@@ -194,7 +192,7 @@ public class CellVoyagerDataExporter
 			}
 
 			// Convert in pixel position
-			final List< long[] > offsets = new ArrayList< long[] >();
+			final List< long[] > offsets = new ArrayList<>();
 			for ( final double[] offsetUm : offsetsUm )
 			{
 				final long x = ( long ) ( ( offsetUm[ 0 ] - xmin ) / ( channelInfo.unmagnifiedPixelWidth / magnification ) );
@@ -235,7 +233,7 @@ public class CellVoyagerDataExporter
 		final Element root = document.getRootElement();
 		final int nTimePoints = Integer.parseInt( root.getChild( "TimelapsCondition" ).getChildText( "Iteration" ) );
 
-		final List< TimePoint > timepoints = new ArrayList< TimePoint >( nTimePoints );
+		final List< TimePoint > timepoints = new ArrayList<>( nTimePoints );
 		for ( int i = 0; i < nTimePoints; i++ )
 		{
 			timepoints.add( new TimePoint( Integer.valueOf( i ) ) );
@@ -275,7 +273,7 @@ public class CellVoyagerDataExporter
 		 * Create view setups
 		 */
 
-		final List< BasicViewSetup > setups = new ArrayList< BasicViewSetup >( channelInfos.size() );
+		final List< BasicViewSetup > setups = new ArrayList<>( channelInfos.size() );
 		int viewSetupIndex = 0;
 		for ( final ChannelInfo channelInfo : channelInfos )
 		{
@@ -330,7 +328,7 @@ public class CellVoyagerDataExporter
 		 * Build views
 		 */
 
-		final ArrayList< ViewRegistration > registrations = new ArrayList< ViewRegistration >();
+		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
 
 		for ( int setupIndex = 0; setupIndex < setups.size(); setupIndex++ )
 		{

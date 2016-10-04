@@ -1,7 +1,5 @@
 package bdv.ij.util;
 
-import ij.Prefs;
-
 import java.awt.Button;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
@@ -23,6 +21,7 @@ import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
 import fiji.util.gui.GenericDialogPlus;
+import ij.Prefs;
 
 public class PluginHelper
 {
@@ -146,7 +145,7 @@ public class PluginHelper
 		final Pattern pattern = Pattern.compile( regex );
 		final Matcher matcher = pattern.matcher( s );
 
-		final ArrayList< int[] > tmp = new ArrayList< int[] >();
+		final ArrayList< int[] > tmp = new ArrayList<>();
 		while ( matcher.find() )
 		{
 			final int[] resolution = new int[] { Integer.parseInt( matcher.group( 1 ) ), Integer.parseInt( matcher.group( 2 ) ), Integer.parseInt( matcher.group( 3 ) ) };

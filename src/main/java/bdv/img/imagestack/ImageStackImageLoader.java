@@ -1,9 +1,8 @@
 package bdv.img.imagestack;
 
-import ij.ImagePlus;
-
 import java.util.ArrayList;
 
+import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
@@ -110,7 +109,7 @@ public abstract class ImageStackImageLoader< T extends NumericType< T > & Native
 		this.imp = imp;
 		this.dim = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
 		final int numSetups = imp.getNChannels();
-		setupImgLoaders = new ArrayList< SetupImgLoader >();
+		setupImgLoaders = new ArrayList<>();
 		for ( int setupId = 0; setupId < numSetups; ++setupId )
 			setupImgLoaders.add( new SetupImgLoader( setupId ) );
 	}

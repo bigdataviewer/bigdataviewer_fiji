@@ -5,6 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import bdv.export.ExportMipmapInfo;
+import bdv.export.WriteSequenceToHdf5;
+import bdv.ij.util.PluginHelper;
+import bdv.spimdata.SequenceDescriptionMinimal;
+import bdv.spimdata.SpimDataMinimal;
 import mpicbg.spim.data.generic.XmlIoAbstractSpimData;
 import mpicbg.spim.data.generic.base.Entity;
 import mpicbg.spim.data.generic.sequence.AbstractSequenceDescription;
@@ -19,11 +24,6 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.img.cell.CellImg;
-import bdv.export.ExportMipmapInfo;
-import bdv.export.WriteSequenceToHdf5;
-import bdv.ij.util.PluginHelper;
-import bdv.spimdata.SequenceDescriptionMinimal;
-import bdv.spimdata.SpimDataMinimal;
 
 /**
  * Aggregate {@link BasicViewSetup setups}, i.e., SPIM source angles and fused
@@ -63,10 +63,10 @@ public class SetupAggregator
 	public SetupAggregator()
 	{
 		timepoints = null;
-		registrations = new ArrayList< ViewRegistration >();
-		setups = new ArrayList< ViewSetupWrapper >();
-		setupImgLoaders = new ArrayList< BasicSetupImgLoader< ? > >();
-		perSetupMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+		registrations = new ArrayList<>();
+		setups = new ArrayList<>();
+		setupImgLoaders = new ArrayList<>();
+		perSetupMipmapInfo = new HashMap<>();
 		imgLoader = new BasicImgLoader()
 		{
 			@Override

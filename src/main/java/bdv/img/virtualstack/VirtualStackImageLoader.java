@@ -1,9 +1,17 @@
 package bdv.img.virtualstack;
 
-import ij.ImagePlus;
-
 import java.util.ArrayList;
 
+import bdv.AbstractViewerSetupImgLoader;
+import bdv.ViewerImgLoader;
+import bdv.img.cache.CacheArrayLoader;
+import bdv.img.cache.CacheHints;
+import bdv.img.cache.CachedCellImg;
+import bdv.img.cache.LoadingStrategy;
+import bdv.img.cache.VolatileGlobalCellCache;
+import bdv.img.cache.VolatileImgCells;
+import bdv.img.cache.VolatileImgCells.CellCache;
+import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
@@ -27,15 +35,6 @@ import net.imglib2.type.volatiles.VolatileFloatType;
 import net.imglib2.type.volatiles.VolatileUnsignedByteType;
 import net.imglib2.type.volatiles.VolatileUnsignedShortType;
 import net.imglib2.util.Fraction;
-import bdv.AbstractViewerSetupImgLoader;
-import bdv.ViewerImgLoader;
-import bdv.img.cache.CacheArrayLoader;
-import bdv.img.cache.CacheHints;
-import bdv.img.cache.CachedCellImg;
-import bdv.img.cache.LoadingStrategy;
-import bdv.img.cache.VolatileGlobalCellCache;
-import bdv.img.cache.VolatileImgCells;
-import bdv.img.cache.VolatileImgCells.CellCache;
 
 /**
  * ImageLoader backed by a ImagePlus. The ImagePlus may be virtual and in
@@ -162,7 +161,7 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		final int numTimepoints = imp.getNFrames();
 		final int numSetups = imp.getNChannels();
 		cache = new VolatileGlobalCellCache( numTimepoints, numSetups, 1, 1 );
-		setupImgLoaders = new ArrayList< SetupImgLoader >();
+		setupImgLoaders = new ArrayList<>();
 		for ( int setupId = 0; setupId < numSetups; ++setupId )
 			setupImgLoaders.add( new SetupImgLoader( setupId, type, volatileType ) );
 	}
@@ -221,9 +220,9 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		{
 			final int priority = 0;
 			final CacheHints cacheHints = new CacheHints( loadingStrategy, priority, false );
-			final CellCache< A > c = cache.new VolatileCellCache< A >( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
-			final VolatileImgCells< A > cells = new VolatileImgCells< A >( c, new Fraction(), dimensions, cellDimensions );
-			final CachedCellImg< T, A > img = new CachedCellImg< T, A >( cells );
+			final CellCache< A > c = cache.new VolatileCellCache<>( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
+			final VolatileImgCells< A > cells = new VolatileImgCells<>( c, new Fraction(), dimensions, cellDimensions );
+			final CachedCellImg< T, A > img = new CachedCellImg<>( cells );
 			return img;
 		}
 

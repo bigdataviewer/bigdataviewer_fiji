@@ -1,13 +1,5 @@
 package bdv.ij;
 
-import fiji.plugin.Bead_Registration;
-import fiji.plugin.Multi_View_Fusion;
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
-
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.TextField;
@@ -23,13 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import mpicbg.spim.data.generic.sequence.BasicViewSetup;
-import mpicbg.spim.data.sequence.TimePoint;
-import mpicbg.spim.io.ConfigurationParserException;
-import mpicbg.spim.io.IOFunctions;
-import mpicbg.spim.io.SPIMConfiguration;
-import mpicbg.spim.io.TextFileAccess;
-import spimopener.SPIMExperiment;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
@@ -43,6 +28,20 @@ import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import fiji.plugin.Bead_Registration;
+import fiji.plugin.Multi_View_Fusion;
+import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.plugin.PlugIn;
+import mpicbg.spim.data.generic.sequence.BasicViewSetup;
+import mpicbg.spim.data.sequence.TimePoint;
+import mpicbg.spim.io.ConfigurationParserException;
+import mpicbg.spim.io.IOFunctions;
+import mpicbg.spim.io.SPIMConfiguration;
+import mpicbg.spim.io.TextFileAccess;
+import spimopener.SPIMExperiment;
 
 public class ExportSpimSequencePlugIn implements PlugIn
 {
@@ -63,7 +62,7 @@ public class ExportSpimSequencePlugIn implements PlugIn
 		Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo;
 		if ( params.setMipmapManual )
 		{
-			perSetupExportMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+			perSetupExportMipmapInfo = new HashMap<>();
 			final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( params.resolutions, params.subdivisions );
 			for ( final BasicViewSetup setup : desc.getViewSetupsOrdered() )
 				perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
@@ -327,7 +326,7 @@ public class ExportSpimSequencePlugIn implements PlugIn
 		else
 		{
 			numChannels = 1;
-			channels = new ArrayList< Integer >();
+			channels = new ArrayList<>();
 			channels.add( 0 );
 		}
 
@@ -372,7 +371,7 @@ public class ExportSpimSequencePlugIn implements PlugIn
 		// test which registration files are there for each channel
 		// file = new File[ timepoints.length ][ channels.length ][
 		// angles.length ];
-		final ArrayList< ArrayList< Integer >> timepoints = new ArrayList< ArrayList< Integer >>();
+		final ArrayList< ArrayList< Integer > > timepoints = new ArrayList<>();
 		int numChoices = 0;
 		conf.zStretching = -1;
 

@@ -1,15 +1,12 @@
 package bdv.ij;
 
-import ij.IJ;
-import ij.ImageJ;
-import ij.plugin.PlugIn;
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,23 +24,26 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
-import mpicbg.spim.data.SpimDataException;
-
 import org.apache.commons.lang.StringUtils;
+
+import com.google.gson.stream.JsonReader;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
-
-import com.google.gson.stream.JsonReader;
+import bdv.viewer.ViewerOptions;
+import ij.IJ;
+import ij.ImageJ;
+import ij.plugin.PlugIn;
+import mpicbg.spim.data.SpimDataException;
 
 /**
  * @author HongKee Moon &lt;moon@mpi-cbg.de&gt;
  */
 public class BigDataBrowserPlugIn implements PlugIn
 {
-	private final Map< String, ImageIcon > imageMap = new HashMap< String, ImageIcon >();
+	private final Map< String, ImageIcon > imageMap = new HashMap<>();
 
-	private final Map< String, String > datasetUrlMap = new HashMap< String, String >();
+	private final Map< String, String > datasetUrlMap = new HashMap<>();
 
 	public static String serverUrl = "http://";
 
@@ -68,7 +68,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 		serverUrl = remoteUrl.toString();
 
-		final ArrayList< String > nameList = new ArrayList< String >();
+		final ArrayList< String > nameList = new ArrayList<>();
 		try
 		{
 			getDatasetList( serverUrl, nameList );

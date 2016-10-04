@@ -1,7 +1,5 @@
 package bdv.ij.export.tiles;
 
-import ij.ImagePlus;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -10,6 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.jdom2.DataConversionException;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.Namespace;
+import org.jdom2.input.SAXBuilder;
+
+import bdv.ij.export.tiles.CellVoyagerDataExporter.ChannelInfo;
+import ij.ImagePlus;
 import mpicbg.spim.data.legacy.LegacyBasicImgLoader;
 import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.Cursor;
@@ -21,15 +28,6 @@ import net.imglib2.img.array.ArrayRandomAccess;
 import net.imglib2.img.basictypeaccess.array.ShortArray;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-
-import org.jdom2.DataConversionException;
-import org.jdom2.Document;
-import org.jdom2.Element;
-import org.jdom2.JDOMException;
-import org.jdom2.Namespace;
-import org.jdom2.input.SAXBuilder;
-
-import bdv.ij.export.tiles.CellVoyagerDataExporter.ChannelInfo;
 
 public class LegacyTileImgLoader implements LegacyBasicImgLoader< UnsignedShortType >
 {
@@ -84,7 +82,7 @@ public class LegacyTileImgLoader implements LegacyBasicImgLoader< UnsignedShortT
 
 		// Map of z -> all the tiles. The tiles are a map of field index ->
 		// filename
-		final TreeMap< Double, Map< Integer, String > > filenames = new TreeMap< Double, Map< Integer, String > >();
+		final TreeMap< Double, Map< Integer, String > > filenames = new TreeMap<>();
 		final Element root = document.getRootElement();
 
 		for ( final Element element : root.getChildren( "MeasurementRecord", NAMESPACE ) )
@@ -118,7 +116,7 @@ public class LegacyTileImgLoader implements LegacyBasicImgLoader< UnsignedShortT
 			Map< Integer, String > tilesAtZ = filenames.get( dz );
 			if ( null == tilesAtZ )
 			{
-				tilesAtZ = new HashMap< Integer, String >();
+				tilesAtZ = new HashMap<>();
 				filenames.put( dz, tilesAtZ );
 			}
 			tilesAtZ.put( field, filename );

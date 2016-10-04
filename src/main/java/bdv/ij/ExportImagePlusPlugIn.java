@@ -1,14 +1,5 @@
 package bdv.ij;
 
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
-import ij.ImageJ;
-import ij.ImagePlus;
-import ij.WindowManager;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
-
 import java.awt.AWTEvent;
 import java.awt.Checkbox;
 import java.awt.Choice;
@@ -19,16 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import mpicbg.spim.data.generic.sequence.BasicViewSetup;
-import mpicbg.spim.data.registration.ViewRegistration;
-import mpicbg.spim.data.registration.ViewRegistrations;
-import mpicbg.spim.data.sequence.Channel;
-import mpicbg.spim.data.sequence.FinalVoxelDimensions;
-import mpicbg.spim.data.sequence.TimePoint;
-import mpicbg.spim.data.sequence.TimePoints;
-import net.imglib2.FinalDimensions;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform3D;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
@@ -45,6 +26,24 @@ import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
+import ij.ImageJ;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.plugin.PlugIn;
+import mpicbg.spim.data.generic.sequence.BasicViewSetup;
+import mpicbg.spim.data.registration.ViewRegistration;
+import mpicbg.spim.data.registration.ViewRegistrations;
+import mpicbg.spim.data.sequence.Channel;
+import mpicbg.spim.data.sequence.FinalVoxelDimensions;
+import mpicbg.spim.data.sequence.TimePoint;
+import mpicbg.spim.data.sequence.TimePoints;
+import net.imglib2.FinalDimensions;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.realtransform.AffineTransform3D;
 
 /**
  * ImageJ plugin to export the current image to xml/hdf5.
@@ -140,20 +139,20 @@ public class ExportImagePlusPlugIn implements PlugIn
 		sourceTransform.set( pw, 0, 0, 0, 0, ph, 0, 0, 0, 0, pd, 0 );
 
 		// write hdf5
-		final HashMap< Integer, BasicViewSetup > setups = new HashMap< Integer, BasicViewSetup >( numSetups );
+		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
 			final BasicViewSetup setup = new BasicViewSetup( s, String.format( "channel %d", s + 1 ), size, voxelSize );
 			setup.setAttribute( new Channel( s + 1 ) );
 			setups.put( s, setup );
 		}
-		final ArrayList< TimePoint > timepoints = new ArrayList< TimePoint >( numTimepoints );
+		final ArrayList< TimePoint > timepoints = new ArrayList<>( numTimepoints );
 		for ( int t = 0; t < numTimepoints; ++t )
 			timepoints.add( new TimePoint( t ) );
 		final SequenceDescriptionMinimal seq = new SequenceDescriptionMinimal( new TimePoints( timepoints ), setups, imgLoader, null );
 
 		Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo;
-		perSetupExportMipmapInfo = new HashMap< Integer, ExportMipmapInfo >();
+		perSetupExportMipmapInfo = new HashMap<>();
 		final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( params.resolutions, params.subdivisions );
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
@@ -235,7 +234,7 @@ public class ExportImagePlusPlugIn implements PlugIn
 		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, false );
 		final SequenceDescriptionMinimal seqh5 = new SequenceDescriptionMinimal( seq, hdf5Loader );
 
-		final ArrayList< ViewRegistration > registrations = new ArrayList< ViewRegistration >();
+		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
 		for ( int t = 0; t < numTimepoints; ++t )
 			for ( int s = 0; s < numSetups; ++s )
 				registrations.add( new ViewRegistration( t, s, sourceTransform ) );

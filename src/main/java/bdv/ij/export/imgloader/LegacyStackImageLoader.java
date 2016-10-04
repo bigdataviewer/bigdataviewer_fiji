@@ -1,12 +1,15 @@
 package bdv.ij.export.imgloader;
 
+import java.util.HashMap;
+
+import org.scijava.Context;
+import org.scijava.app.AppService;
+import org.scijava.app.StatusService;
+
 import ij.ImagePlus;
 import io.scif.SCIFIOService;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
-
-import java.util.HashMap;
-
 import mpicbg.spim.data.legacy.LegacyBasicImgLoader;
 import mpicbg.spim.data.sequence.ImgLoader;
 import mpicbg.spim.data.sequence.ViewDescription;
@@ -20,10 +23,6 @@ import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.meta.ImgPlus;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-
-import org.scijava.Context;
-import org.scijava.app.AppService;
-import org.scijava.app.StatusService;
 
 
 /**
@@ -52,7 +51,7 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 		this.filenames = filenames;
 		this.useImageJOpener = useImageJOpener;
 		opener = useImageJOpener ? null : new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
-		factory = new ArrayImgFactory< UnsignedShortType >();
+		factory = new ArrayImgFactory<>();
 		type = new UnsignedShortType();
 	}
 
@@ -64,12 +63,12 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 		{
 			final ImagePlus imp = new ImagePlus( fn );
 			if ( imp.getType() == ImagePlus.GRAY16 )
-				return new ImgPlus< UnsignedShortType >( ImageJFunctions.wrapShort( imp ) );
+				return new ImgPlus<>( ImageJFunctions.wrapShort( imp ) );
 			else if ( imp.getType() == ImagePlus.GRAY8 )
 			{
 				System.out.println( "wrapping" );
-				return new ImgPlus< UnsignedShortType >(
-					new ImgView< UnsignedShortType >(
+				return new ImgPlus<>(
+					new ImgView<>(
 							Converters.convert(
 									( RandomAccessibleInterval<UnsignedByteType> ) ImageJFunctions.wrapByte( imp ),
 									new Converter< UnsignedByteType, UnsignedShortType >() {
