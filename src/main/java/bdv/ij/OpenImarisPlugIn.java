@@ -1,9 +1,5 @@
 package bdv.ij;
 
-import ij.ImageJ;
-import ij.Prefs;
-import ij.plugin.PlugIn;
-
 import java.awt.FileDialog;
 import java.awt.Frame;
 import java.io.File;
@@ -18,6 +14,10 @@ import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.imaris.Imaris;
 import bdv.spimdata.SpimDataMinimal;
+import bdv.viewer.ViewerOptions;
+import ij.ImageJ;
+import ij.Prefs;
+import ij.plugin.PlugIn;
 
 public class OpenImarisPlugIn implements PlugIn
 {
@@ -114,7 +114,7 @@ public class OpenImarisPlugIn implements PlugIn
 			{
 				lastDatasetPath = file.getAbsolutePath();
 				final SpimDataMinimal spimData = Imaris.openIms( file.getAbsolutePath() );
-				new BigDataViewer( spimData, file.getName(), new ProgressWriterIJ() );
+				BigDataViewer.open( spimData, file.getName(), new ProgressWriterIJ(), ViewerOptions.options() );
 			}
 			catch ( final IOException e )
 			{

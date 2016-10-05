@@ -1,8 +1,5 @@
 package bdv.ij;
 
-import ij.Prefs;
-import ij.plugin.PlugIn;
-
 import java.awt.FileDialog;
 import java.awt.Frame;
 import java.io.File;
@@ -15,6 +12,9 @@ import javax.swing.filechooser.FileFilter;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
+import bdv.viewer.ViewerOptions;
+import ij.Prefs;
+import ij.plugin.PlugIn;
 
 public class BigDataViewerPlugIn implements PlugIn
 {
@@ -105,7 +105,7 @@ public class BigDataViewerPlugIn implements PlugIn
 			try
 			{
 				lastDatasetPath = file.getAbsolutePath();
-				BigDataViewer.view( file.getAbsolutePath(), new ProgressWriterIJ() );
+				BigDataViewer.open( file.getAbsolutePath(), file.getName(), new ProgressWriterIJ(), ViewerOptions.options() );
 			}
 			catch ( final Exception e )
 			{

@@ -328,8 +328,13 @@ public class SpimRegistrationSequence
 			else
 				imgD = conf.cropSizeZ/scale;
 
-			// TODO: this should be a RealInterval
-			return FinalRealInterval.createMinSize( ( int ) min.x + cropOffsetX, (int ) min.y + cropOffsetY, ( int ) min.z + cropOffsetZ, imgW, imgH, imgD );
+			return FinalRealInterval.createMinMax(
+					( int ) min.x + cropOffsetX,
+					( int ) min.y + cropOffsetY,
+					( int ) min.z + cropOffsetZ,
+					( int ) min.x + cropOffsetX + imgW - 1,
+					( int ) min.y + cropOffsetY + imgH - 1,
+					( int ) min.z + cropOffsetZ + imgD - 1 );
 	}
 
 	protected static ViewRegistrations createViewRegistrations( final SPIMConfiguration conf, final ArrayList< ViewSetup > setups )

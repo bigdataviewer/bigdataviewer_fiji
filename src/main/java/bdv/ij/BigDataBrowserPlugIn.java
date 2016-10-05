@@ -150,7 +150,9 @@ public class BigDataBrowserPlugIn implements PlugIn
 					System.out.println( key );
 					try
 					{
-						BigDataViewer.view( datasetUrlMap.get( key ), new ProgressWriterIJ() );
+						final String filename = datasetUrlMap.get( key );
+						final String title = new File( filename ).getName();
+						BigDataViewer.open( filename, title, new ProgressWriterIJ(), ViewerOptions.options() );
 					}
 					catch ( final SpimDataException e )
 					{
