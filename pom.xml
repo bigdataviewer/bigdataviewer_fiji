@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>sc.fiji</groupId>
 		<artifactId>pom-bigdataviewer</artifactId>
-		<version>3.3.0</version>
+		<version>4.0.1</version>
 	</parent>
 
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>2.1.1-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
@@ -65,11 +65,6 @@
 		<system>Jenkins</system>
 		<url>http://jenkins.imagej.net/job/bigdataviewer_fiji/</url>
 	</ciManagement>
-
-	<properties>
-		<scijava.jvm.version>1.8</scijava.jvm.version>
-		<enforcer.skip>true</enforcer.skip>
-	</properties>
 
 	<repositories>
 		<repository>

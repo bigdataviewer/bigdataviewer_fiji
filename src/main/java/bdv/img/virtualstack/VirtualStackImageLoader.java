@@ -4,10 +4,10 @@ import java.util.ArrayList;
 
 import bdv.AbstractViewerSetupImgLoader;
 import bdv.ViewerImgLoader;
+import bdv.cache.CacheHints;
+import bdv.cache.LoadingStrategy;
 import bdv.img.cache.CacheArrayLoader;
-import bdv.img.cache.CacheHints;
 import bdv.img.cache.CachedCellImg;
-import bdv.img.cache.LoadingStrategy;
 import bdv.img.cache.VolatileGlobalCellCache;
 import bdv.img.cache.VolatileImgCells;
 import bdv.img.cache.VolatileImgCells.CellCache;
@@ -158,9 +158,8 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		this.loader = loader;
 		dimensions = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
 		cellDimensions = new int[] { imp.getWidth(), imp.getHeight(), 1 };
-		final int numTimepoints = imp.getNFrames();
 		final int numSetups = imp.getNChannels();
-		cache = new VolatileGlobalCellCache( numTimepoints, numSetups, 1, 1 );
+		cache = new VolatileGlobalCellCache( 1, 1 );
 		setupImgLoaders = new ArrayList<>();
 		for ( int setupId = 0; setupId < numSetups; ++setupId )
 			setupImgLoaders.add( new SetupImgLoader( setupId, type, volatileType ) );
@@ -171,7 +170,7 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 	protected abstract void linkVolatileType( CachedCellImg< V, A > img );
 
 	@Override
-	public VolatileGlobalCellCache getCache()
+	public VolatileGlobalCellCache getCacheControl()
 	{
 		return cache;
 	}

@@ -143,7 +143,7 @@ public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgL
 			setupImgLoaders.add( new SetupImgLoader<>( loader.getSetupImgLoader( setupId ) ) );
 
 		if ( loader instanceof VirtualStackImageLoader )
-			this.loadercache = ( ( VirtualStackImageLoader< ?, ?, ? > ) loader ).getCache();
+			this.loadercache = ( ( VirtualStackImageLoader< ?, ?, ? > ) loader ).getCacheControl();
 		else
 			this.loadercache = null;
 

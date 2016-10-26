@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.scijava.vecmath.Point3f;
-
 import bdv.ij.export.imgloader.HuiskenImageLoader;
 import bdv.ij.export.imgloader.StackImageLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
@@ -34,6 +32,7 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.FinalRealInterval;
 import net.imglib2.RealInterval;
 import net.imglib2.realtransform.AffineTransform3D;
+import spim.vecmath.Point3f;
 import spimopener.SPIMExperiment;
 
 public class SpimRegistrationSequence
