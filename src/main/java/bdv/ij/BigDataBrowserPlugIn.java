@@ -1,5 +1,6 @@
 package bdv.ij;
 
+import bdv.ij.util.SpringUtilities;
 import ij.IJ;
 import ij.ImageJ;
 import ij.plugin.PlugIn;
@@ -7,6 +8,8 @@ import ij.plugin.PlugIn;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -17,21 +20,40 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Authenticator;
+import java.net.HttpURLConnection;
+import java.net.PasswordAuthentication;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.SpringLayout;
 
 import mpicbg.spim.data.SpimDataException;
 
@@ -53,6 +75,8 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 	public static String serverUrl = "http://";
 
+	public static String domain = "/public";
+
 	@Override
 	public void run( final String arg )
 	{
@@ -68,13 +92,90 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 		if ( null == arg || arg == "" )
 		{
-			final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
+			final JRadioButton publicButton = new JRadioButton( "Public" );
+			publicButton.setActionCommand( "Public" );
+
+			final JRadioButton privateButton = new JRadioButton( "Private" );
+			privateButton.setActionCommand( "Private" );
+
+			ButtonGroup group = new ButtonGroup();
+			group.add( publicButton );
+			group.add( privateButton );
+
+			final JTextField id = new JTextField();
+			final JPasswordField password = new JPasswordField();
+
+			final JPanel userPanel = new JPanel( new SpringLayout() );
+			userPanel.setBorder( BorderFactory.createTitledBorder( "" ) );
+
+			userPanel.add( new JLabel( "Enter ID" ) );
+			userPanel.add( id );
+			userPanel.add( new JLabel( "Enter Password" ) );
+			userPanel.add( password );
+
+			SpringUtilities.makeCompactGrid( userPanel,
+					2, 2, //rows, cols
+					6, 6,        //initX, initY
+					6, 6 );       //xPad, yPad
+
+			for ( Component c : userPanel.getComponents() )
+			{
+				c.setEnabled( false );
+			}
+
+			Object[] inputFields = {
+					publicButton,
+					privateButton,
+					userPanel,
+					"Remote URL" };
+
+			publicButton.addActionListener( new ActionListener()
+			{
+				@Override public void actionPerformed( ActionEvent e )
+				{
+					for ( Component c : userPanel.getComponents() )
+					{
+						c.setEnabled( !publicButton.isSelected() );
+					}
+				}
+			} );
+
+			privateButton.addActionListener( new ActionListener()
+			{
+				@Override public void actionPerformed( ActionEvent e )
+				{
+					for ( Component c : userPanel.getComponents() )
+					{
+						c.setEnabled( privateButton.isSelected() );
+					}
+				}
+			} );
+
+			publicButton.setSelected( true );
+
+			final Object remoteUrl = JOptionPane.showInputDialog( null, inputFields, "BigDataServer",
 					JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
 
 			if ( remoteUrl == null )
 				return;
 
 			serverUrl = remoteUrl.toString();
+
+			if ( privateButton.isSelected() )
+			{
+				Authenticator.setDefault( new Authenticator()
+				{
+					protected PasswordAuthentication getPasswordAuthentication()
+					{
+						return new PasswordAuthentication( id.getText(), password.getPassword() );
+					}
+				} );
+				domain = "/private";
+			}
+			else
+			{
+				domain = "/public";
+			}
 		}
 		else
 		{
@@ -109,38 +210,51 @@ public class BigDataBrowserPlugIn implements PlugIn
 		}
 
 		final ArrayList< Object > nameList = new ArrayList< Object >();
-		String category = "";
+
+		String tag = "";
 		try
 		{
-
-			if ( serverUrl.indexOf( "/category/" ) > -1 )
-			{
-				String[] tokens = serverUrl.split( "/category/" );
-				serverUrl = tokens[ 0 ];
-				category = tokens[ 1 ];
-			}
-			getDatasetList( serverUrl, nameList, category );
+			// TODO: search datasets by tag name should be provided soon
+			getDatasetList( serverUrl, nameList, tag );
 		}
 		catch ( final IOException e )
 		{
 			IJ.showMessage( "Error connecting to server at " + serverUrl );
 			e.printStackTrace();
 		}
-		createDatasetListUI( category, serverUrl, nameList.toArray() );
+		catch ( NoSuchAlgorithmException e )
+		{
+			e.printStackTrace();
+		}
+		catch ( KeyManagementException e )
+		{
+			e.printStackTrace();
+		}
+		createDatasetListUI( tag, serverUrl, nameList.toArray() );
 	}
 
 	class DataSet
 	{
+		private final String index;
 		private final String name;
 		private final String description;
-		private final String category;
+		private final String tags;
+		private final String sharedBy;
+		private final Boolean isPublic;
 
-		DataSet( String name, String description, String category )
+		DataSet( String index, String name, String description, String tags, String sharedBy, Boolean isPublic )
 		{
-
+			this.index = index;
 			this.name = name;
 			this.description = description;
-			this.category = category;
+			this.tags = tags;
+			this.sharedBy = sharedBy;
+			this.isPublic = isPublic;
+		}
+
+		public String getIndex()
+		{
+			return index;
 		}
 
 		public String getName()
@@ -153,9 +267,19 @@ public class BigDataBrowserPlugIn implements PlugIn
 			return description;
 		}
 
-		public String getCategory()
+		public String getTags()
 		{
-			return category;
+			return tags;
+		}
+
+		public String getSharedBy()
+		{
+			return sharedBy;
+		}
+
+		public Boolean isPublic()
+		{
+			return isPublic;
 		}
 	}
 
@@ -174,15 +298,52 @@ public class BigDataBrowserPlugIn implements PlugIn
 		}
 	}
 
-	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList, final String searchCategory ) throws IOException
+	private boolean getDatasetList( final String remoteUrl, final ArrayList< Object > nameList, final String searchTag ) throws IOException, NoSuchAlgorithmException, KeyManagementException
 	{
-		// Get JSON string from the server
-		final URL url = new URL( remoteUrl + "/json/?category=" + URLEncoder.encode( searchCategory, "UTF-8" ) );
+		TrustManager[] trustAllCerts = new TrustManager[] {
+				new X509TrustManager()
+				{
+					public java.security.cert.X509Certificate[] getAcceptedIssuers()
+					{
+						return null;
+					}
 
-		final InputStream is = url.openStream();
+					public void checkClientTrusted( X509Certificate[] certs, String authType )
+					{
+					}
+
+					public void checkServerTrusted( X509Certificate[] certs, String authType )
+					{
+					}
+
+				}
+		};
+
+		SSLContext sc = SSLContext.getInstance( "SSL" );
+		sc.init( null, trustAllCerts, new java.security.SecureRandom() );
+		HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
+
+		// Create all-trusting host name verifier
+		HostnameVerifier allHostsValid = new HostnameVerifier()
+		{
+			public boolean verify( String hostname, SSLSession session )
+			{
+				return true;
+			}
+		};
+		// Install the all-trusting host verifier
+		HttpsURLConnection.setDefaultHostnameVerifier( allHostsValid );
+
+		String urlString = resolveRedirectedURL( remoteUrl + domain + "/tag/?name=" + URLEncoder.encode( searchTag, "UTF-8" ) );
+
+		final URL url = new URL( urlString );
+
+		URLConnection conn = url.openConnection();
+
+		System.out.println( url );
+
+		final InputStream is = conn.getInputStream();
 		final JsonReader reader = new JsonReader( new InputStreamReader( is, "UTF-8" ) );
-
-		String prevCategory = null;
 
 		reader.beginObject();
 
@@ -193,35 +354,35 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 			reader.beginObject();
 
-			String id = null, category = null, description = null, thumbnailUrl = null, datasetUrl = null;
+			String id = null, datasetName = null, tags = null, description = null, thumbnailUrl = null, datasetUrl = null, sharedBy = null;
+			Boolean isPublic = false;
+
 			while ( reader.hasNext() )
 			{
 				final String name = reader.nextName();
-				if ( name.equals( "id" ) )
-					id = reader.nextString();
+				if ( name.equals( "name" ) )
+					datasetName = reader.nextString();
 				else if ( name.equals( "description" ) )
 					description = reader.nextString();
 				else if ( name.equals( "thumbnailUrl" ) )
 					thumbnailUrl = reader.nextString();
 				else if ( name.equals( "datasetUrl" ) )
 					datasetUrl = reader.nextString();
-				else if ( name.equals( "category" ) )
-					category = reader.nextString();
+				else if ( name.equals( "tags" ) )
+					tags = reader.nextString();
 				else if ( name.equals( "index" ) )
-					reader.nextString();
+					id = reader.nextString();
+				else if ( name.equals( "sharedBy" ) )
+					sharedBy = reader.nextString();
+				else if ( name.equals( "isPublic" ) )
+					isPublic = reader.nextBoolean();
 				else
 					reader.skipValue();
 			}
 
-			if ( prevCategory == null || !prevCategory.equals( category ) )
-			{
-				prevCategory = category;
-				nameList.add( new Category( prevCategory ) );
-			}
-
 			if ( id != null )
 			{
-				nameList.add( new DataSet( id, description, category ) );
+				nameList.add( new DataSet( id, datasetName, description, tags, sharedBy, isPublic ) );
 				if ( thumbnailUrl != null && StringUtils.isNotEmpty( thumbnailUrl ) )
 					imageMap.put( id, new ImageIcon( new URL( thumbnailUrl ) ) );
 				if ( datasetUrl != null )
@@ -238,7 +399,57 @@ public class BigDataBrowserPlugIn implements PlugIn
 		return true;
 	}
 
-	private void createDatasetListUI( final String category, final String remoteUrl, final Object[] values )
+	private String resolveRedirectedURL( String url )
+	{
+		try
+		{
+			URL obj = new URL( url );
+
+			HttpURLConnection conn = ( HttpURLConnection ) obj.openConnection();
+			conn.setReadTimeout( 5000 );
+			conn.addRequestProperty( "Accept-Language", "en-US,en;q=0.8" );
+			conn.addRequestProperty( "User-Agent", "Mozilla" );
+
+			boolean redirect = false;
+
+			// normally, 3xx is redirect
+			int status = conn.getResponseCode();
+			if ( status != HttpURLConnection.HTTP_OK )
+			{
+				if ( status == HttpURLConnection.HTTP_MOVED_TEMP
+						|| status == HttpURLConnection.HTTP_MOVED_PERM
+						|| status == HttpURLConnection.HTTP_SEE_OTHER )
+					redirect = true;
+			}
+
+			if ( redirect )
+			{
+
+				// get redirect url from "location" header field
+				String newUrl = conn.getHeaderField( "Location" );
+
+				// get the cookie if need, for login
+				String cookies = conn.getHeaderField( "Set-Cookie" );
+
+				// open the new connnection again
+				conn = ( HttpURLConnection ) new URL( newUrl ).openConnection();
+				conn.setRequestProperty( "Cookie", cookies );
+				conn.addRequestProperty( "Accept-Language", "en-US,en;q=0.8" );
+				conn.addRequestProperty( "User-Agent", "Mozilla" );
+
+				return newUrl;
+			}
+
+			return url;
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+		}
+		return url;
+	}
+
+	private void createDatasetListUI( final String tag, final String remoteUrl, final Object[] values )
 	{
 		final JList list = new JList( values );
 		list.setCellRenderer( new ThumbnailListRenderer() );
@@ -259,7 +470,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 
 						try
 						{
-							BigDataViewer.view( datasetUrlMap.get( ds.getName() ), new ProgressWriterIJ() );
+							BigDataViewer.view( ds.getName(), datasetUrlMap.get( ds.getIndex() ), new ProgressWriterIJ() );
 						}
 						catch ( final SpimDataException e )
 						{
@@ -274,10 +485,10 @@ public class BigDataBrowserPlugIn implements PlugIn
 		scroll.setPreferredSize( new Dimension( 600, 800 ) );
 
 		final JFrame frame = new JFrame();
-		if ( category.equals( "" ) )
+		if ( tag.equals( "" ) )
 			frame.setTitle( "BigDataServer Browser - " + remoteUrl );
 		else
-			frame.setTitle( "BigDataServer Browser - " + remoteUrl + "/category/" + category );
+			frame.setTitle( "BigDataServer Browser - " + remoteUrl + " searched by " + tag );
 		frame.add( scroll );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 		frame.pack();
@@ -310,8 +521,21 @@ public class BigDataBrowserPlugIn implements PlugIn
 			else
 			{
 				DataSet ds = ( DataSet ) value;
-				label.setIcon( imageMap.get( ds.getName() ) );
-				label.setText( "<html><b>" + ds.getName() + "</b><br/> " + ds.getDescription() + "</html>" );
+				label.setIcon( imageMap.get( ds.getIndex() ) );
+
+				StringBuilder sb = new StringBuilder( "<html><b>" + ds.getName() + "</b><br/> " );
+
+				if ( domain.equals( "/private" ) )
+				{
+					sb.append( "<font color=green>Public: " + ds.isPublic() + "</font><br/>" );
+					if ( !ds.sharedBy.isEmpty() )
+						sb.append( "<font color=green>Shared by " + ds.getSharedBy() + "</font><br/>" );
+				}
+
+				sb.append( "Tags: <font color=blue>" + ds.getTags() + "</font><br/>" );
+				sb.append( ds.getDescription() + "<br/></html>" );
+
+				label.setText( sb.toString() );
 				label.setHorizontalTextPosition( JLabel.RIGHT );
 				label.setFont( font );
 			}
