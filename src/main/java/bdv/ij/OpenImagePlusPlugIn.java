@@ -8,6 +8,9 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.imagestack.ImageStackImageLoader;
@@ -25,7 +28,6 @@ import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
-import ij.plugin.PlugIn;
 import ij.process.LUT;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
@@ -41,7 +43,9 @@ import mpicbg.spim.data.sequence.TimePoints;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
-public class OpenImagePlusPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Open Current Image")
+public class OpenImagePlusPlugIn implements Command
 {
 	public static void main( final String[] args )
 	{
@@ -49,11 +53,11 @@ public class OpenImagePlusPlugIn implements PlugIn
 		new ImageJ();
 		IJ.run("Confocal Series (2.2MB)");
 //		IJ.run("Fly Brain (1MB)");
-		new OpenImagePlusPlugIn().run( null );
+		new OpenImagePlusPlugIn().run();
 	}
 
 	@Override
-	public void run( final String arg )
+	public void run()
 	{
 		// get the current image
 		final ImagePlus imp = WindowManager.getCurrentImage();

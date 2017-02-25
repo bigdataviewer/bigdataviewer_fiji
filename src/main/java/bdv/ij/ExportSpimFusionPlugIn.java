@@ -23,6 +23,9 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
@@ -47,7 +50,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
@@ -66,7 +68,9 @@ import mpicbg.spim.io.SPIMConfiguration;
 import mpicbg.spim.io.TextFileAccess;
 import spimopener.SPIMExperiment;
 
-public class ExportSpimFusionPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Export Fused Sequence as XML/HDF5")
+public class ExportSpimFusionPlugIn implements Command
 {
 	static double minValueStatic = 0;
 
@@ -91,7 +95,7 @@ public class ExportSpimFusionPlugIn implements PlugIn
 	static String autoChunkSizes = "{16,16,16}";
 
 	@Override
-	public void run( final String arg0 )
+	public void run()
 	{
 		final Parameters params = getParameters();
 
@@ -1057,6 +1061,6 @@ public class ExportSpimFusionPlugIn implements PlugIn
 
 	public static void main(final String[] args)
 	{
-		new ExportSpimFusionPlugIn().run( null );
+		new ExportSpimFusionPlugIn().run();
 	}
 }

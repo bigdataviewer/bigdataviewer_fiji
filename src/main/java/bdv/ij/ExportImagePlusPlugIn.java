@@ -14,6 +14,9 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
@@ -37,7 +40,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.plugin.PlugIn;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -51,17 +53,19 @@ import mpicbg.spim.data.sequence.TimePoints;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
-public class ExportImagePlusPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Export Current Image as XML/HDF5")
+public class ExportImagePlusPlugIn implements Command
 {
 	public static void main( final String[] args )
 	{
 		new ImageJ();
 		IJ.run("Confocal Series (2.2MB)");
-		new ExportImagePlusPlugIn().run( null );
+		new ExportImagePlusPlugIn().run();
 	}
 
 	@Override
-	public void run( final String arg )
+	public void run()
 	{
 		// get the current image
 		final ImagePlus imp = WindowManager.getCurrentImage();

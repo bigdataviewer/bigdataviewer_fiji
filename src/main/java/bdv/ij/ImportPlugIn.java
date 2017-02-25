@@ -13,6 +13,9 @@ import java.util.List;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.NumericType;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.ViewerImgLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
@@ -24,7 +27,6 @@ import ij.ImagePlus;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.measure.Calibration;
-import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicMultiResolutionImgLoader;
@@ -38,7 +40,8 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
-public class ImportPlugIn implements PlugIn
+@Plugin(type = Command.class, menuPath = "File>Import>BigDataViewer...")
+public class ImportPlugIn implements Command
 {
 	public static String xmlFile = "";
 	public static int timepoint = 0;
@@ -59,7 +62,7 @@ public class ImportPlugIn implements PlugIn
 	}
 
 	@Override
-	public void run( final String arg0 )
+	public void run()
 	{
 		final GenericDialogPlus gd = new GenericDialogPlus( "Import from BigDataViewer file" );
 		gd.addFileField( "xml file", xmlFile );
@@ -219,6 +222,6 @@ public class ImportPlugIn implements PlugIn
 	public static void main( final String[] args )
 	{
 		new ImageJ();
-		new ImportPlugIn().run( null );
+		new ImportPlugIn().run();
 	}
 }

@@ -27,19 +27,22 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
 import org.apache.commons.lang.StringUtils;
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.viewer.ViewerOptions;
 import ij.IJ;
 import ij.ImageJ;
-import ij.plugin.PlugIn;
 import mpicbg.spim.data.SpimDataException;
 
 /**
  * @author HongKee Moon &lt;moon@mpi-cbg.de&gt;
  */
-public class BigDataBrowserPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Browse BigDataServer")
+public class BigDataBrowserPlugIn implements Command
 {
 	private final Map< String, ImageIcon > imageMap = new HashMap<>();
 
@@ -48,7 +51,7 @@ public class BigDataBrowserPlugIn implements PlugIn
 	public static String serverUrl = "http://";
 
 	@Override
-	public void run( final String arg )
+	public void run()
 	{
 		BufferedImage image = null;
 		try
@@ -198,6 +201,6 @@ public class BigDataBrowserPlugIn implements PlugIn
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
-		new BigDataBrowserPlugIn().run( null );
+		new BigDataBrowserPlugIn().run();
 	}
 }

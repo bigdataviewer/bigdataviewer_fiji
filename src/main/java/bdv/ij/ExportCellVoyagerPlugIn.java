@@ -14,6 +14,9 @@ import java.io.FilenameFilter;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.export.ProgressWriter;
 import bdv.ij.export.tiles.CellVoyagerDataExporter;
 import bdv.ij.util.PluginHelper;
@@ -21,9 +24,10 @@ import bdv.ij.util.ProgressWriterIJ;
 import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImageJ;
-import ij.plugin.PlugIn;
 
-public class ExportCellVoyagerPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Export CellVoyager dataset as XML/HDF5")
+public class ExportCellVoyagerPlugIn implements Command
 {
 
 	protected static class Parameters
@@ -56,11 +60,18 @@ public class ExportCellVoyagerPlugIn implements PlugIn
 
 	static String sourceFolderStr;
 
+	private String sourcePath;
+
+	public void setSourcePath( final String sourcePath )
+	{
+		this.sourcePath = sourcePath;
+	}
+
 	@Override
-	public void run( final String arg )
+	public void run()
 	{
 
-		final Parameters params = getParameters( arg );
+		final Parameters params = getParameters( sourcePath );
 		if ( params == null )
 			return;
 
@@ -248,6 +259,7 @@ public class ExportCellVoyagerPlugIn implements PlugIn
 
 		final ExportCellVoyagerPlugIn plugin = new ExportCellVoyagerPlugIn();
 		final File file = new File( "/Users/tinevez/Desktop/Data/1_7_6_1_2/20130703T145244/" );
-		plugin.run( file.getAbsolutePath() );
+		plugin.setSourcePath( file.getAbsolutePath() );
+		plugin.run();
 	}
 }

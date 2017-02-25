@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
+import org.scijava.command.Command;
+import org.scijava.plugin.Plugin;
+
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.imaris.Imaris;
@@ -17,19 +20,20 @@ import bdv.spimdata.SpimDataMinimal;
 import bdv.viewer.ViewerOptions;
 import ij.ImageJ;
 import ij.Prefs;
-import ij.plugin.PlugIn;
 
-public class OpenImarisPlugIn implements PlugIn
+@Plugin(type = Command.class,
+	menuPath = "Plugins>BigDataViewer>Open Imaris (experimental)")
+public class OpenImarisPlugIn implements Command
 {
 	static String lastDatasetPath = "";
 
 	public static void main( final String[] args )
 	{
 		ImageJ.main( args );
-		new OpenImarisPlugIn().run( null );
+		new OpenImarisPlugIn().run();
 	}
 	@Override
-	public void run( final String arg )
+	public void run()
 	{
 		File file = null;
 
