@@ -10,6 +10,9 @@ import java.awt.event.TextEvent;
 import java.io.File;
 import java.util.List;
 
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.type.numeric.NumericType;
+
 import bdv.ViewerImgLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
@@ -29,8 +32,6 @@ import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.VoxelDimensions;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.type.numeric.NumericType;
 
 /**
  * ImageJ plugin to import a raw image from xml/hdf5.

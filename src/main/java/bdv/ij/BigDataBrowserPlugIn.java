@@ -1,5 +1,7 @@
 package bdv.ij;
 
+import com.google.gson.stream.JsonReader;
+
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -25,8 +27,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
 import org.apache.commons.lang.StringUtils;
-
-import com.google.gson.stream.JsonReader;
 
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;

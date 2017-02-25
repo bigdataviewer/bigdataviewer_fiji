@@ -1,10 +1,5 @@
 package bdv.ij;
 
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
-import ij.ImageJ;
-import ij.plugin.PlugIn;
-
 import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
@@ -23,6 +18,10 @@ import bdv.export.ProgressWriter;
 import bdv.ij.export.tiles.CellVoyagerDataExporter;
 import bdv.ij.util.PluginHelper;
 import bdv.ij.util.ProgressWriterIJ;
+import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
+import ij.ImageJ;
+import ij.plugin.PlugIn;
 
 public class ExportCellVoyagerPlugIn implements PlugIn
 {

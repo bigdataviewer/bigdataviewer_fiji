@@ -17,6 +17,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import net.imglib2.Dimensions;
+import net.imglib2.FinalDimensions;
+import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.util.Pair;
+import net.imglib2.util.ValuePair;
+
 import bdv.export.ExportMipmapInfo;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
@@ -58,11 +64,6 @@ import mpicbg.spim.io.ConfigurationParserException;
 import mpicbg.spim.io.IOFunctions;
 import mpicbg.spim.io.SPIMConfiguration;
 import mpicbg.spim.io.TextFileAccess;
-import net.imglib2.Dimensions;
-import net.imglib2.FinalDimensions;
-import net.imglib2.realtransform.AffineTransform3D;
-import net.imglib2.util.Pair;
-import net.imglib2.util.ValuePair;
 import spimopener.SPIMExperiment;
 
 public class ExportSpimFusionPlugIn implements PlugIn
