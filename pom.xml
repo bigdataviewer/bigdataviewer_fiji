@@ -62,8 +62,8 @@
 		<url>https://github.com/bigdataviewer/bigdataviewer_fiji/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>Jenkins</system>
-		<url>http://jenkins.imagej.net/job/bigdataviewer_fiji/</url>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/bigdataviewer/bigdataviewer_fiji</url>
 	</ciManagement>
 
 	<repositories>
