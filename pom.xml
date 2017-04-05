@@ -3,16 +3,31 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>sc.fiji</groupId>
-		<artifactId>pom-bigdataviewer</artifactId>
-		<version>4.0.1</version>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>14.0.0</version>
+		<relativePath />
 	</parent>
 
+	<groupId>sc.fiji</groupId>
 	<artifactId>bigdataviewer_fiji</artifactId>
 	<version>3.0.1-SNAPSHOT</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
+	<url>https://imagej.net/BigDataViewer</url>
+	<inceptionYear>2014</inceptionYear>
+	<organization>
+		<name>BigDataViewer</name>
+		<url>https://imagej.net/BigDataViewer</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>GNU General Public License v3+</name>
+			<url>https://www.gnu.org/licenses/gpl.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<developers>
 		<developer>
@@ -51,6 +66,13 @@
 		</contributor>
 	</contributors>
 
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>http://forum.imagej.net/</archive>
+		</mailingList>
+	</mailingLists>
+
 	<scm>
 		<connection>scm:git:git://github.com/bigdataviewer/bigdataviewer_fiji</connection>
 		<developerConnection>scm:git:git@github.com:bigdataviewer/bigdataviewer_fiji</developerConnection>
@@ -65,6 +87,12 @@
 		<system>Travis CI</system>
 		<url>https://travis-ci.org/bigdataviewer/bigdataviewer_fiji</url>
 	</ciManagement>
+
+	<properties>
+		<package-name>bdv.ij</package-name>
+		<license.licenseName>gpl_v3</license.licenseName>
+		<license.copyrightOwners>BigDataViewer developers.</license.copyrightOwners>
+	</properties>
 
 	<repositories>
 		<repository>
@@ -97,6 +125,8 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>SPIM_Registration</artifactId>
+			<!-- NB: To avoid OME dependency clashes. -->
+			<version>5.0.11</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scijava</groupId>
