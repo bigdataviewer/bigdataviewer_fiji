@@ -4,26 +4,25 @@ import java.util.ArrayList;
 
 import bdv.AbstractViewerSetupImgLoader;
 import bdv.ViewerImgLoader;
-import bdv.cache.CacheHints;
-import bdv.cache.LoadingStrategy;
 import bdv.img.cache.CacheArrayLoader;
-import bdv.img.cache.CachedCellImg;
 import bdv.img.cache.VolatileGlobalCellCache;
-import bdv.img.cache.VolatileImgCells;
-import bdv.img.cache.VolatileImgCells.CellCache;
 import ij.ImagePlus;
 import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
-import mpicbg.spim.data.sequence.ViewId;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.Volatile;
+import net.imglib2.cache.img.CachedCellImg;
+import net.imglib2.cache.volatiles.CacheHints;
+import net.imglib2.cache.volatiles.LoadingStrategy;
 import net.imglib2.img.NativeImg;
 import net.imglib2.img.basictypeaccess.volatiles.VolatileAccess;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileByteArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileFloatArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileIntArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
+import net.imglib2.img.cell.AbstractCellImg;
+import net.imglib2.img.cell.CellGrid;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
@@ -34,7 +33,6 @@ import net.imglib2.type.volatiles.VolatileARGBType;
 import net.imglib2.type.volatiles.VolatileFloatType;
 import net.imglib2.type.volatiles.VolatileUnsignedByteType;
 import net.imglib2.type.volatiles.VolatileUnsignedShortType;
-import net.imglib2.util.Fraction;
 
 /**
  * ImageLoader backed by a ImagePlus. The ImagePlus may be virtual and in
@@ -194,19 +192,13 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		@Override
 		public RandomAccessibleInterval< V > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 		{
-			final ViewId view = new ViewId( timepointId, setupId );
-			final CachedCellImg< V, A > img = prepareCachedImage( view, level, LoadingStrategy.BUDGETED );
-			linkVolatileType( img );
-			return img;
+			return prepareCachedImage( timepointId, level, LoadingStrategy.BUDGETED, volatileType );
 		}
 
 		@Override
 		public RandomAccessibleInterval< T > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 		{
-			final ViewId view = new ViewId( timepointId, setupId );
-			final CachedCellImg< T, A > img = prepareCachedImage( view, level, LoadingStrategy.BLOCKING );
-			linkType( img );
-			return img;
+			return prepareCachedImage( timepointId, level, LoadingStrategy.BUDGETED, type );
 		}
 
 		/**
@@ -215,14 +207,12 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		 * linked type} before it can be used. The type should be either
 		 * {@link ARGBType} and {@link VolatileARGBType}.
 		 */
-		protected < T extends NativeType< T > > CachedCellImg< T, A > prepareCachedImage( final ViewId view, final int level, final LoadingStrategy loadingStrategy )
+		protected < T extends NativeType< T > > AbstractCellImg< T, A, ?, ? > prepareCachedImage( final int timepointId, final int level, final LoadingStrategy loadingStrategy, final T type )
 		{
 			final int priority = 0;
 			final CacheHints cacheHints = new CacheHints( loadingStrategy, priority, false );
-			final CellCache< A > c = cache.new VolatileCellCache<>( view.getTimePointId(), view.getViewSetupId(), level, cacheHints, loader );
-			final VolatileImgCells< A > cells = new VolatileImgCells<>( c, new Fraction(), dimensions, cellDimensions );
-			final CachedCellImg< T, A > img = new CachedCellImg<>( cells );
-			return img;
+			final CellGrid grid = new CellGrid( dimensions, cellDimensions );
+			return cache.createImg( grid, timepointId, setupId, level, cacheHints, loader, type );
 		}
 
 		@Override

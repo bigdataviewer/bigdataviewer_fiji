@@ -1,18 +1,15 @@
 package bdv.img.virtualstack;
 
+import bdv.img.cache.CacheArrayLoader;
 import ij.ImagePlus;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
-import bdv.img.cache.CacheArrayLoader;
 
 public class VirtualStackVolatileShortArrayLoader implements CacheArrayLoader< VolatileShortArray >
 {
-	private final VolatileShortArray theEmptyArray;
-
 	private final ImagePlus imp;
 
 	public VirtualStackVolatileShortArrayLoader( final ImagePlus imp )
 	{
-		theEmptyArray = new VolatileShortArray( imp.getWidth() * imp.getHeight(), false );
 		this.imp = imp;
 	}
 
@@ -24,12 +21,6 @@ public class VirtualStackVolatileShortArrayLoader implements CacheArrayLoader< V
 		final int frame = timepoint + 1;
 		final short[] data = ( short[] ) imp.getStack().getProcessor( imp.getStackIndex( channel, slice, frame ) ).getPixels();
 		return new VolatileShortArray( data, true );
-	}
-
-	@Override
-	public VolatileShortArray emptyArray( final int[] dimensions )
-	{
-		return theEmptyArray;
 	}
 
 	@Override
