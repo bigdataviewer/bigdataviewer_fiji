@@ -94,7 +94,9 @@
 		<license.copyrightOwners>BigDataViewer developers.</license.copyrightOwners>
 
 		<imglib2.version>4.2.1</imglib2.version>
+		<imglib2-ui.version>2.0.0-beta-32</imglib2-ui.version>
 		<bigdataviewer-core.version>4.1.0</bigdataviewer-core.version>
+		<SPIM_Registration.version>5.0.13</SPIM_Registration.version>
 	</properties>
 
 	<repositories>
@@ -128,13 +130,10 @@
 		<dependency>
 			<groupId>net.imglib2</groupId>
 			<artifactId>imglib2-ui</artifactId>
-			<version>2.0.0-beta-32</version>
 		</dependency>
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>SPIM_Registration</artifactId>
-			<!-- NB: To avoid OME dependency clashes. -->
-			<version>5.0.11</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scijava</groupId>
