@@ -11,7 +11,7 @@
 
 	<groupId>sc.fiji</groupId>
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>4.0.1-SNAPSHOT</version>
+	<version>4.0.2-SNAPSHOT</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
