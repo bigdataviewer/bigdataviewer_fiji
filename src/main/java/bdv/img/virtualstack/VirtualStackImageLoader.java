@@ -198,7 +198,7 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 		@Override
 		public RandomAccessibleInterval< T > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 		{
-			return prepareCachedImage( timepointId, level, LoadingStrategy.BUDGETED, type );
+			return prepareCachedImage( timepointId, level, LoadingStrategy.BLOCKING, type );
 		}
 
 		/**
