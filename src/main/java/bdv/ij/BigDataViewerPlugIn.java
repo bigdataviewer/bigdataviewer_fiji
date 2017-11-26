@@ -26,6 +26,9 @@ public class BigDataViewerPlugIn implements Command
 	@Override
 	public void run()
 	{
+		if ( ij.Prefs.setIJMenuBar )
+			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+
 		File file = null;
 
 		if ( Prefs.useJFileChooser )

@@ -97,6 +97,9 @@ public class ExportSpimFusionPlugIn implements Command
 	@Override
 	public void run()
 	{
+		if ( ij.Prefs.setIJMenuBar )
+			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+
 		final Parameters params = getParameters();
 
 		// cancelled

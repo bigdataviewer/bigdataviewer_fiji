@@ -53,6 +53,9 @@ public class BigDataBrowserPlugIn implements Command
 	@Override
 	public void run()
 	{
+		if ( ij.Prefs.setIJMenuBar )
+			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+
 		BufferedImage image = null;
 		try
 		{

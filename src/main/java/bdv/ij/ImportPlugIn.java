@@ -64,6 +64,9 @@ public class ImportPlugIn implements Command
 	@Override
 	public void run()
 	{
+		if ( ij.Prefs.setIJMenuBar )
+			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+
 		final GenericDialogPlus gd = new GenericDialogPlus( "Import from BigDataViewer file" );
 		gd.addFileField( "xml file", xmlFile );
 		final TextField tfXmlFile = (TextField) gd.getStringFields().lastElement();

@@ -59,6 +59,9 @@ public class OpenImagePlusPlugIn implements Command
 	@Override
 	public void run()
 	{
+		if ( ij.Prefs.setIJMenuBar )
+			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+
 		// get the current image
 		final ImagePlus imp = WindowManager.getCurrentImage();
 
