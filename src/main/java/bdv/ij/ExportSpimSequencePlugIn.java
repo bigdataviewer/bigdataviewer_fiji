@@ -46,7 +46,7 @@ import mpicbg.spim.io.TextFileAccess;
 import spimopener.SPIMExperiment;
 
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BigDataViewer>Export Spim Sequence as XML/HDF5")
+	menuPath = "Plugins>BigDataViewer>Deprecated>Export Spim Sequence as XML/HDF5")
 public class ExportSpimSequencePlugIn implements Command
 {
 	@Override

@@ -26,7 +26,7 @@ import ij.IJ;
 import ij.ImageJ;
 
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BigDataViewer>Export CellVoyager dataset as XML/HDF5")
+	menuPath = "Plugins>BigDataViewer>Deprecated>Export CellVoyager dataset as XML/HDF5")
 public class ExportCellVoyagerPlugIn implements Command
 {
 
