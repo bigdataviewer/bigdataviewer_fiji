@@ -11,7 +11,7 @@
 
 	<groupId>sc.fiji</groupId>
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>4.0.2-SNAPSHOT</version>
+	<version>4.0.2</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
@@ -76,7 +76,7 @@
 	<scm>
 		<connection>scm:git:git://github.com/bigdataviewer/bigdataviewer_fiji</connection>
 		<developerConnection>scm:git:git@github.com:bigdataviewer/bigdataviewer_fiji</developerConnection>
-		<tag>HEAD</tag>
+		<tag>bigdataviewer_fiji-4.0.2</tag>
 		<url>https://github.com/bigdataviewer/bigdataviewer_fiji</url>
 	</scm>
 	<issueManagement>
