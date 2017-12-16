@@ -15,10 +15,12 @@ import net.imglib2.algorithm.stats.ComputeMinMax;
 import net.imglib2.converter.Converter;
 import net.imglib2.converter.Converters;
 import net.imglib2.converter.RealFloatConverter;
+import net.imglib2.converter.RealUnsignedByteConverter;
 import net.imglib2.converter.RealUnsignedShortConverter;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.Type;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 
@@ -45,14 +47,14 @@ public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgL
 		TAKE_FROM_IMAGEPROCESSOR
 	}
 
-	public static ImagePlusImgLoader< UnsignedShortType > createGray8( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
+	public static ImagePlusImgLoader< UnsignedByteType > createGray8( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY8 )
 			throw new RuntimeException( "expected ImagePlus type GRAY8" );
 		if ( imp.getStack() != null && imp.getStack().isVirtual() )
-			return new ImagePlusImgLoader<>( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max, new UnsignedShortType(), new RealUnsignedShortConverterFactory() );
+			return new ImagePlusImgLoader<>( imp, VirtualStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max, new UnsignedByteType(), new RealUnsignedByteConverterFactory() );
 		else
-			return new ImagePlusImgLoader<>( imp, ImageStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max, new UnsignedShortType(), new RealUnsignedShortConverterFactory() );
+			return new ImagePlusImgLoader<>( imp, ImageStackImageLoader.createUnsignedByteInstance( imp ), minMaxOption, min, max, new UnsignedByteType(), new RealUnsignedByteConverterFactory() );
 	}
 
 	public static ImagePlusImgLoader< FloatType > createFloatFromGray8( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
@@ -75,14 +77,14 @@ public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgL
 			return new ImagePlusImgLoader<>( imp, ImageStackImageLoader.createUnsignedShortInstance( imp ), minMaxOption, min, max, new UnsignedShortType(), new RealUnsignedShortConverterFactory() );
 	}
 
-	public static ImagePlusImgLoader< UnsignedShortType > createGray32( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
+	public static ImagePlusImgLoader< FloatType > createGray32( final ImagePlus imp, final MinMaxOption minMaxOption, final double min, final double max )
 	{
 		if( imp.getType() != ImagePlus.GRAY32 )
 			throw new RuntimeException( "expected ImagePlus type GRAY32" );
 		if ( imp.getStack() != null && imp.getStack().isVirtual() )
-			return new ImagePlusImgLoader<>( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max, new UnsignedShortType(), new RealUnsignedShortConverterFactory() );
+			return new ImagePlusImgLoader<>( imp, VirtualStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max, new FloatType(), new RealFloatConverterFactory() );
 		else
-			return new ImagePlusImgLoader<>( imp, ImageStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max, new UnsignedShortType(), new RealUnsignedShortConverterFactory() );
+			return new ImagePlusImgLoader<>( imp, ImageStackImageLoader.createFloatInstance( imp ), minMaxOption, min, max, new FloatType(), new RealFloatConverterFactory() );
 	}
 
 	protected final ImagePlus imp;
@@ -98,12 +100,23 @@ public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgL
 	protected double impMax;
 
 	protected final T type;
+	public String reportPixelType()
+	{ return type.getClass().getSimpleName(); }
 
 	protected final ConverterFactory< T > converterFactory;
 
 	public interface ConverterFactory< T >
 	{
 		public < S extends RealType< S > & NativeType< S > > Converter< S, T > create( double min, double max );
+	}
+
+	static class RealUnsignedByteConverterFactory implements ConverterFactory< UnsignedByteType >
+	{
+		@Override
+		public < S extends RealType< S > & NativeType< S > > Converter< S, UnsignedByteType > create( final double min, final double max )
+		{
+			return new RealUnsignedByteConverter<>( min, max );
+		}
 	}
 
 	static class RealUnsignedShortConverterFactory implements ConverterFactory< UnsignedShortType >

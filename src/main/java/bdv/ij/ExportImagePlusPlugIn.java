@@ -239,7 +239,7 @@ public class ExportImagePlusPlugIn implements Command
 		}
 
 		// write xml sequence description
-		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, false );
+		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, imgLoader.reportPixelType(), false );
 		final SequenceDescriptionMinimal seqh5 = new SequenceDescriptionMinimal( seq, hdf5Loader );
 
 		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
