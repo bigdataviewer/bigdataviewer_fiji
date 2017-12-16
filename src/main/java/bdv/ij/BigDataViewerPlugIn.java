@@ -16,12 +16,20 @@ import org.scijava.plugin.Plugin;
 import bdv.BigDataViewer;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.viewer.ViewerOptions;
+import ij.ImageJ;
 import ij.Prefs;
 
 @Plugin(type = Command.class, menuPath = "Plugins>BigDataViewer>Open XML/HDF5")
 public class BigDataViewerPlugIn implements Command
 {
 	static String lastDatasetPath = "./export.xml";
+
+	public static void main( final String[] args )
+	{
+		System.setProperty( "apple.laf.useScreenMenuBar", "true" );
+		new ImageJ();
+		new BigDataViewerPlugIn().run();
+	}
 
 	@Override
 	public void run()
