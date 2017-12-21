@@ -12,6 +12,8 @@ import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
 import bdv.BigDataViewer;
+import bdv.ViewerImgLoader;
+import bdv.cache.CacheControl;
 import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.imagestack.ImageStackImageLoader;
 import bdv.img.virtualstack.VirtualStackImageLoader;
@@ -21,6 +23,7 @@ import bdv.spimdata.WrapBasicImgLoader;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.tools.brightness.SetupAssignments;
 import bdv.viewer.DisplayMode;
+import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
 import bdv.viewer.VisibilityAndGrouping;
 import ij.CompositeImage;
@@ -28,7 +31,9 @@ import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.WindowManager;
+import ij.gui.GenericDialog;
 import ij.process.LUT;
+import mpicbg.spim.data.generic.AbstractSpimData;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -62,16 +67,70 @@ public class OpenImagePlusPlugIn implements Command
 		if ( ij.Prefs.setIJMenuBar )
 			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
 
+		int nImages = WindowManager.getImageCount();
 		// get the current image
-		final ImagePlus imp = WindowManager.getCurrentImage();
-
+		final ImagePlus curr = WindowManager.getCurrentImage();
 		// make sure there is one
-		if ( imp == null )
+		if ( curr == null )
 		{
 			IJ.showMessage( "Please open an image first." );
 			return;
 		}
 
+		final int[] idList = WindowManager.getIDList();
+		final String[] nameList = new String[ nImages ];
+		GenericDialog gd = new GenericDialog("Images to open");
+		for( int i = 0; i < nImages; i++ )
+		{
+		    ImagePlus imp = WindowManager.getImage( idList[ i ]);
+		    nameList[ i ] = imp.getTitle();
+		    gd.addCheckbox( nameList[i], imp == curr );
+		}
+
+		gd.showDialog();
+		if (gd.wasCanceled()) return;
+
+		final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
+		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList<>();
+
+		AbstractSpimData< ? > spimData;
+		CacheControl cache = null;
+		for( int i = 0; i < nImages; i++ )
+		{
+			if( !gd.getNextBoolean() )
+				continue;
+
+			ImagePlus imp = WindowManager.getImage( idList[ i ]);
+			spimData = load( imp, converterSetups, sources );
+			if( spimData != null )
+				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
+		}
+
+		int nTimepoints = 1;
+		final BigDataViewer bdv = BigDataViewer.open( converterSetups, sources,
+				nTimepoints, cache,
+				"BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
+
+		final SetupAssignments sa = bdv.getSetupAssignments();
+		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
+		vg.setFusedEnabled( true );
+
+		int channel_offset = 0;
+		for( int i = 0; i < nImages; i++ )
+		{
+			ImagePlus imp = WindowManager.getImage( idList[ i ]);
+			if ( imp.isComposite() )
+			{
+				transferChannelSettings( channel_offset, ( CompositeImage ) imp, sa, vg );
+				channel_offset += imp.getNChannels();
+			}
+			else
+				transferImpSettings( imp, sa );
+		}
+	}
+
+	protected AbstractSpimData< ? > load( ImagePlus imp, ArrayList< ConverterSetup > converterSetups, ArrayList< SourceAndConverter< ? >> sources )
+	{
 		// check the image type
 		switch ( imp.getType() )
 		{
@@ -82,14 +141,14 @@ public class OpenImagePlusPlugIn implements Command
 			break;
 		default:
 			IJ.showMessage( "Only 8, 16, 32-bit images and RGB images are supported currently!" );
-			return;
+			return null;
 		}
 
 		// check the image dimensionality
 		if ( imp.getNDimensions() < 3 )
 		{
 			IJ.showMessage( "Image must be at least 3-dimensional!" );
-			return;
+			return null;
 		}
 
 		// get calibration and image size
@@ -179,19 +238,14 @@ public class OpenImagePlusPlugIn implements Command
 				registrations.add( new ViewRegistration( t, s, sourceTransform ) );
 
 		final File basePath = new File(".");
-		final SpimDataMinimal spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
+		final AbstractSpimData< ? > spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
 		WrapBasicImgLoader.wrapImgLoaderIfNecessary( spimData );
+		BigDataViewer.initSetups( spimData, converterSetups, sources );
 
-		final BigDataViewer bdv = BigDataViewer.open( spimData, "BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
-		final SetupAssignments sa = bdv.getSetupAssignments();
-		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
-		if ( imp.isComposite() )
-			transferChannelSettings( ( CompositeImage ) imp, sa, vg );
-		else
-			transferImpSettings( imp, sa );
+		return spimData;
 	}
 
-	protected void transferChannelSettings( final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
+	protected void transferChannelSettings( int channel_offset, final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
 	{
 		final int nChannels = ci.getNChannels();
 		final int mode = ci.getCompositeMode();
@@ -199,7 +253,7 @@ public class OpenImagePlusPlugIn implements Command
 		for ( int c = 0; c < nChannels; ++c )
 		{
 			final LUT lut = ci.getChannelLut( c + 1 );
-			final ConverterSetup setup = setupAssignments.getConverterSetups().get( c );
+			final ConverterSetup setup = setupAssignments.getConverterSetups().get( channel_offset + c );
 			if ( transferColor )
 				setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
 			setup.setDisplayRange( lut.min, lut.max );
@@ -207,7 +261,6 @@ public class OpenImagePlusPlugIn implements Command
 		if ( mode == IJ.COMPOSITE )
 		{
 			final boolean[] activeChannels = ci.getActiveChannels();
-			visibility.setDisplayMode( DisplayMode.FUSED );
 			for ( int i = 0; i < activeChannels.length; ++i )
 				visibility.setSourceActive( i, activeChannels[ i ] );
 		}
