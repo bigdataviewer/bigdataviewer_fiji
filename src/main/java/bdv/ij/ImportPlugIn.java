@@ -2,30 +2,26 @@ package bdv.ij;
 
 import static mpicbg.spim.data.generic.sequence.ImgLoaderHints.LOAD_COMPLETELY;
 
-import java.awt.AWTEvent;
-import java.awt.Checkbox;
-import java.awt.Scrollbar;
-import java.awt.TextField;
-import java.awt.event.TextEvent;
 import java.io.File;
 import java.util.List;
 
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.numeric.NumericType;
 
+import org.scijava.ItemIO;
+import org.scijava.ItemVisibility;
 import org.scijava.command.Command;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
+import org.scijava.widget.FileWidget;
+import org.scijava.log.LogService;
 
 import bdv.ViewerImgLoader;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
-import fiji.util.gui.GenericDialogPlus;
-import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
 import ij.measure.Calibration;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
@@ -40,141 +36,172 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
-@Plugin(type = Command.class, menuPath = "File>Import>BigDataViewer...")
+@Plugin(type = Command.class, menuPath = "File>Import>BigDataViewer...",
+        name = "BDV_extractImage", headless = true,
+        description = "Extracts one image from BigDataViewer HDF/XML dataset.")
 public class ImportPlugIn implements Command
 {
-	public static String xmlFile = "";
-	public static int timepoint = 0;
-	public static int setup = 0;
-	public static int mipmap = 0;
-	public static boolean openAsVirtualStack = false;
+	@Parameter
+	private LogService log;
 
-	private static SequenceDescriptionMinimal openSequence( final String xmlFilename ) throws SpimDataException
+	///input filename
+	@Parameter(label = "import from BigDataViewer XML file:",
+		style = FileWidget.OPEN_STYLE,
+		initializer = "fetchMaxValuesFromXML",
+		callback = "fetchMaxValuesFromXML")
+	private File xmlFile = null;
+
+	//input timepoint index
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
+		label = "available timepoint index")
+	private String timepointHint = "range: 0-0";
+	//
+	@Parameter(label = "selected timepoint index:",
+		min="0",
+		callback="enforceMaxTimepoint")
+	private int timepointVal = 0;
+	private int timepointMax = 0;
+
+	//input setup index
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
+		label = "available setup index")
+	private String setupHint = "range: 0-0";
+	//
+	@Parameter(label = "selected setup index:",
+		min="0",
+		callback="enforceMaxSetup")
+	private int setupVal = 0;
+	private int setupMax = 0;
+
+	//input mipmap index
+	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
+		label = "available resolution index")
+	private String mipmapHint = "range: 0-0";
+	//
+	@Parameter(label = "selected resolution level:",
+		min="0",
+		callback="enforceMaxMipmap")
+	private int mipmapVal = 0;
+	private int mipmapMax = 0;
+
+	//input checkbox
+	@Parameter(label = "open as virtual stack:")
+	private boolean openAsVirtualStack = false;
+
+	//output image
+	@Parameter(type = ItemIO.OUTPUT)
+	public ImagePlus imp = null;
+
+
+	///make sure timepointVal is not larger than timepointMax
+	private
+	void enforceMaxTimepoint()
 	{
-		final File f = new File( xmlFilename );
-		if ( f.exists() && f.isFile() && f.getName().endsWith( ".xml" ) )
+		//enforce...
+		if (timepointVal > timepointMax) timepointVal = timepointMax;
+	}
+
+	///make sure setupVal is not larger than setupMax
+	private
+	void enforceMaxSetup()
+	{
+		if (setupVal > setupMax) setupVal = setupMax;
+	}
+
+	///make sure mipmapVal is not larger than mipmapMax
+	private
+	void enforceMaxMipmap()
+	{
+		if (mipmapVal > mipmapMax) mipmapVal = mipmapMax;
+	}
+
+
+	/**
+	 * Tries to open this.xmlFile and updates the remaining
+	 * attributes from it, especially their "max" variants.
+	 */
+	@SuppressWarnings("unused")
+	private
+	void fetchMaxValuesFromXML()
+	{
+		//first, read-out proper upper bounds...
+		try
 		{
-			final SpimDataMinimal spimData = new XmlIoSpimDataMinimal().load( xmlFilename );
+			final SequenceDescriptionMinimal seq = openSequence();
+			if ( seq != null )
+			{
+				log.info("reading metadata from "+xmlFile.getName());
+				timepointMax = seq.getTimePoints().size();
+				setupMax = seq.getViewSetupsOrdered().size();
+
+				if ( seq.getImgLoader() instanceof ViewerImgLoader )
+				{
+					final ViewerImgLoader vil = ( ViewerImgLoader ) seq.getImgLoader();
+					mipmapMax = vil.getSetupImgLoader( seq.getViewSetupsOrdered().get( 0 ).getId() ).numMipmapLevels();
+				}
+				else
+				{
+					mipmapMax = 0;
+				}
+			}
+			else
+			{
+				//couldn't load input file, returning to the initial values
+				timepointMax = 0;
+				setupMax = 0;
+				mipmapMax = 0;
+			}
+		}
+		catch ( final Exception ex )
+		{
+			log.error( ex.getMessage() );
+			ex.printStackTrace();
+		}
+
+		//...and update hint messages
+		timepointHint = String.format("range: 0-%d",timepointMax);
+		setupHint     = String.format("range: 0-%d",setupMax);
+		mipmapHint    = String.format("range: 0-%d",mipmapMax);
+
+		//second, enforce them
+		enforceMaxTimepoint();
+		enforceMaxSetup();
+		enforceMaxMipmap();
+	}
+
+	///file-system oriented checks and loads in metadata
+	private
+	SequenceDescriptionMinimal openSequence()
+	throws SpimDataException
+	{
+		if ( xmlFile != null && xmlFile.exists() && xmlFile.isFile() && xmlFile.getName().endsWith( ".xml" ) )
+		{
+			final SpimDataMinimal spimData = new XmlIoSpimDataMinimal().load( xmlFile.getAbsolutePath() );
 			return spimData.getSequenceDescription();
 		}
 		else
 			return null;
 	}
 
+
 	@Override
 	public void run()
 	{
-		if ( ij.Prefs.setIJMenuBar )
-			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
-
-		final GenericDialogPlus gd = new GenericDialogPlus( "Import from BigDataViewer file" );
-		gd.addFileField( "xml file", xmlFile );
-		final TextField tfXmlFile = (TextField) gd.getStringFields().lastElement();
-		gd.addSlider( "timepoint index", 0, 0, timepoint );
-		final Scrollbar slTimepoint = (Scrollbar) gd.getSliders().lastElement();
-		final TextField tfTimepoint = (TextField) gd.getNumericFields().lastElement();
-		gd.addSlider( "setup index", 0, 0, setup );
-		final Scrollbar slSetup = (Scrollbar) gd.getSliders().lastElement();
-		final TextField tfSetup = (TextField) gd.getNumericFields().lastElement();
-		gd.addSlider( "resolution level", 0, 0, setup );
-		final Scrollbar slMipmap = (Scrollbar) gd.getSliders().lastElement();
-		final TextField tfMipmap = (TextField) gd.getNumericFields().lastElement();
-		gd.addCheckbox( "open as virtual stack", openAsVirtualStack );
-		final Checkbox cVirtual = (Checkbox) gd.getCheckboxes().lastElement();
-
-		class TryOpen
-		{
-			void check( final String xmlFilename )
-			{
-				boolean enable = false;
-				boolean enableMipmap = false;
-				try
-				{
-					final SequenceDescriptionMinimal seq = openSequence( xmlFilename );
-					if ( seq != null )
-					{
-						final int numTimepoints = seq.getTimePoints().size();
-						final int numSetups = seq.getViewSetupsOrdered().size();
-
-						slTimepoint.setMaximum( numTimepoints );
-						slSetup.setMaximum( numSetups );
-						enable = true;
-
-						if ( seq.getImgLoader() instanceof ViewerImgLoader )
-						{
-							final ViewerImgLoader vil = ( ViewerImgLoader ) seq.getImgLoader();
-							final int numMipmapLevels = vil.getSetupImgLoader( seq.getViewSetupsOrdered().get( 0 ).getId() ).numMipmapLevels();
-
-							slMipmap.setMaximum( numMipmapLevels );
-							enableMipmap = true;
-						}
-						else
-						{
-							enableMipmap = false;
-						}
-					}
-				}
-				catch ( final Exception ex )
-				{
-					IJ.error( ex.getMessage() );
-					ex.printStackTrace();
-				}
-				slTimepoint.setEnabled( enable );
-				tfTimepoint.setEnabled( enable );
-				slSetup.setEnabled( enable );
-				tfSetup.setEnabled( enable );
-				slMipmap.setEnabled( enableMipmap );
-				tfMipmap.setEnabled( enableMipmap );
-				cVirtual.setEnabled( enable );
-			}
-		}
-		final TryOpen tryOpen = new TryOpen();
-		tryOpen.check( xmlFile );
-
-		gd.addDialogListener( new DialogListener()
-		{
-			@Override
-			public boolean dialogItemChanged( final GenericDialog dialog, final AWTEvent e )
-			{
-				gd.getNextString();
-				gd.getNextNumber();
-				gd.getNextNumber();
-				gd.getNextNumber();
-				gd.getNextBoolean();
-				if ( e instanceof TextEvent && e.getID() == TextEvent.TEXT_VALUE_CHANGED && e.getSource() == tfXmlFile )
-				{
-					final TextField tf = ( TextField ) e.getSource();
-					final String xmlFilename = tf.getText();
-					tryOpen.check( xmlFilename );
-				}
-				return true;
-			}
-		} );
-
-		gd.showDialog();
-		if ( gd.wasCanceled() )
-			return;
-
-		xmlFile = gd.getNextString();
-		timepoint = ( int ) gd.getNextNumber();
-		setup = ( int ) gd.getNextNumber();
-		mipmap = ( int ) gd.getNextNumber();
-		openAsVirtualStack = gd.getNextBoolean();
-
-		System.out.println( xmlFile + " " + timepoint + " " + setup );
+		if (xmlFile != null)
+			System.out.println( xmlFile.getName() + " " + timepointVal + " " + setupVal );
 		try
 		{
-			final SequenceDescriptionMinimal seq = openSequence( xmlFile );
+			final SequenceDescriptionMinimal seq = openSequence();
 			if ( seq != null )
 			{
 				final List< TimePoint > timepointsOrdered = seq.getTimePoints().getTimePointsOrdered();
 				final List< BasicViewSetup > setupsOrdered = seq.getViewSetupsOrdered();
 				final int numTimepoints = timepointsOrdered.size();
 				final int numSetups = setupsOrdered.size();
-				timepoint = Math.max( Math.min( timepoint, numTimepoints - 1 ), 0 );
-				setup = Math.max( Math.min( setup, numSetups - 1 ), 0 );
-				final int timepointId = timepointsOrdered.get( timepoint ).getId();
-				final int setupId = setupsOrdered.get( setup ).getId();
+				timepointVal = Math.max( Math.min( timepointVal, numTimepoints - 1 ), 0 );
+				setupVal = Math.max( Math.min( setupVal, numSetups - 1 ), 0 );
+				final int timepointId = timepointsOrdered.get( timepointVal ).getId();
+				final int setupId = setupsOrdered.get( setupVal ).getId();
 
 				final BasicImgLoader il = seq.getImgLoader();
 				final boolean duplicateImp = !openAsVirtualStack;
@@ -186,10 +213,10 @@ public class ImportPlugIn implements Command
 				{
 					final BasicMultiResolutionImgLoader mil = ( BasicMultiResolutionImgLoader ) il;
 					final int numMipmapLevels = mil.getSetupImgLoader( setupId ).numMipmapLevels();
-					if ( mipmap >= numMipmapLevels )
-						mipmap = numMipmapLevels - 1;
-					img = mil.getSetupImgLoader( setupId ).getImage( timepointId, mipmap, hints );
-					mipmapResolution = mil.getSetupImgLoader( setupId ).getMipmapResolutions()[ mipmap ];
+					if ( mipmapVal >= numMipmapLevels )
+						mipmapVal = numMipmapLevels - 1;
+					img = mil.getSetupImgLoader( setupId ).getImage( timepointId, mipmapVal, hints );
+					mipmapResolution = mil.getSetupImgLoader( setupId ).getMipmapResolutions()[ mipmapVal ];
 				}
 				else
 				{
@@ -197,13 +224,17 @@ public class ImportPlugIn implements Command
 					mipmapResolution = new double[] { 1, 1, 1 };
 				}
 
-				@SuppressWarnings( { "unchecked", "rawtypes" } )
-				ImagePlus imp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( ( RandomAccessibleInterval< NumericType > ) img, "" );
+				@SuppressWarnings({ "unchecked", "rawtypes" })
+				ImagePlus iimp = net.imglib2.img.display.imagej.ImageJFunctions.wrap( ( RandomAccessibleInterval< NumericType > ) img, "" );
+				imp = iimp;
+				//NB: terrible workaround to have SuppressWarnings local...
+				//    (and imp global to this class)
+
 				imp.setDimensions( 1, imp.getImageStackSize(), 1 );
 				if ( duplicateImp )
 					imp = imp.duplicate();
-				imp.setTitle( new File( xmlFile ).getName() + " " + timepoint + " " + setup );
-				final VoxelDimensions voxelSize = setupsOrdered.get( setup ).getVoxelSize();
+				imp.setTitle( xmlFile.getName() + " " + timepointVal + " " + setupVal );
+				final VoxelDimensions voxelSize = setupsOrdered.get( setupVal ).getVoxelSize();
 				if ( voxelSize != null )
 				{
 					final Calibration calibration = imp.getCalibration();
@@ -212,12 +243,12 @@ public class ImportPlugIn implements Command
 					calibration.pixelHeight = voxelSize.dimension( 1 ) * mipmapResolution[ 1 ];
 					calibration.pixelDepth = voxelSize.dimension( 2 ) * mipmapResolution[ 2 ];
 				}
-				imp.show();
+				//imp.show();
 			}
 		}
 		catch ( final Exception ex )
 		{
-			IJ.error( ex.getMessage() );
+			log.error( ex.getMessage() );
 			ex.printStackTrace();
 		}
 	}
@@ -225,6 +256,6 @@ public class ImportPlugIn implements Command
 	public static void main( final String[] args )
 	{
 		new ImageJ();
-		new ImportPlugIn().run();
+		//new ImportPlugIn().run();
 	}
 }
