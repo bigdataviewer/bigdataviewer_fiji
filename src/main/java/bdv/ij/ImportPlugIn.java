@@ -186,6 +186,9 @@ public class ImportPlugIn implements Command
 
 
 	@Override
+	//NB: this function intentionally ignores *Max attributes and does its
+	//    own checking for proper/allowed values because non-GUI usage is
+	//    not (should not) be aware of the *Max siblings (which are helpers for GUI only)
 	public void run()
 	{
 		if (xmlFile != null)
@@ -244,6 +247,8 @@ public class ImportPlugIn implements Command
 					calibration.pixelHeight = voxelSize.dimension( 1 ) * mipmapResolution[ 1 ];
 					calibration.pixelDepth = voxelSize.dimension( 2 ) * mipmapResolution[ 2 ];
 				}
+				//let the user decice what to do with the extracted image
+				//NB: default plugin action for output images is just to display them...
 				//imp.show();
 			}
 		}
