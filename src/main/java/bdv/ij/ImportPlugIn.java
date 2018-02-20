@@ -47,14 +47,13 @@ public class ImportPlugIn implements Command
 	///input filename
 	@Parameter(label = "import from BigDataViewer XML file:",
 		style = FileWidget.OPEN_STYLE,
-		initializer = "fetchMaxValuesFromXML",
 		callback = "fetchMaxValuesFromXML")
 	public File xmlFile = null;
 
 	//input timepoint index
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "available timepoint index")
-	private String timepointHint = "range: 0-0";
+	private String timepointHint = "range: 0-?";
 	//
 	@Parameter(label = "selected timepoint index:",
 		min="0",
@@ -65,7 +64,7 @@ public class ImportPlugIn implements Command
 	//input setup index
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "available setup index")
-	private String setupHint = "range: 0-0";
+	private String setupHint = "range: 0-?";
 	//
 	@Parameter(label = "selected setup index:",
 		min="0",
@@ -76,7 +75,7 @@ public class ImportPlugIn implements Command
 	//input mipmap index
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
 		label = "available resolution index")
-	private String mipmapHint = "range: 0-0";
+	private String mipmapHint = "range: 0-?";
 	//
 	@Parameter(label = "selected resolution level:",
 		min="0",
@@ -94,26 +93,37 @@ public class ImportPlugIn implements Command
 	public ImagePlus imp = null;
 
 
+	//helper flag to make sure fetchMaxValuesFromXML() is called (if not ever
+	//called before) with the change of any dialog attribute, this especially
+	//assures that an attempt to fetch updated values is made
+	private boolean wasFetcherCalledAlready = false;
+
+	//helper flag to enable/disable bounds checking of some dialog attribute
+	private boolean gaveFetcherSomeValues = false;
+
 	///make sure timepointVal is not larger than timepointMax
 	private
 	void enforceMaxTimepoint()
 	{
+		if (!wasFetcherCalledAlready) fetchMaxValuesFromXML();
 		//enforce...
-		if (timepointVal > timepointMax) timepointVal = timepointMax;
+		if (gaveFetcherSomeValues && timepointVal > timepointMax) timepointVal = timepointMax;
 	}
 
 	///make sure setupVal is not larger than setupMax
 	private
 	void enforceMaxSetup()
 	{
-		if (setupVal > setupMax) setupVal = setupMax;
+		if (!wasFetcherCalledAlready) fetchMaxValuesFromXML();
+		if (gaveFetcherSomeValues && setupVal > setupMax) setupVal = setupMax;
 	}
 
 	///make sure mipmapVal is not larger than mipmapMax
 	private
 	void enforceMaxMipmap()
 	{
-		if (mipmapVal > mipmapMax) mipmapVal = mipmapMax;
+		if (!wasFetcherCalledAlready) fetchMaxValuesFromXML();
+		if (gaveFetcherSomeValues && mipmapVal > mipmapMax) mipmapVal = mipmapMax;
 	}
 
 
@@ -121,11 +131,12 @@ public class ImportPlugIn implements Command
 	 * Tries to open this.xmlFile and updates the remaining
 	 * attributes from it, especially their "max" variants.
 	 */
-	@SuppressWarnings("unused")
 	private
 	void fetchMaxValuesFromXML()
 	{
 		//first, read-out proper upper bounds...
+		wasFetcherCalledAlready = true;
+		gaveFetcherSomeValues = false;
 		try
 		{
 			final SequenceDescriptionMinimal seq = openSequence();
@@ -144,6 +155,7 @@ public class ImportPlugIn implements Command
 				{
 					mipmapMax = 0;
 				}
+				gaveFetcherSomeValues = true;
 			}
 			else
 			{
@@ -160,9 +172,18 @@ public class ImportPlugIn implements Command
 		}
 
 		//...and update hint messages
-		timepointHint = String.format("range: 0-%d",timepointMax);
-		setupHint     = String.format("range: 0-%d",setupMax);
-		mipmapHint    = String.format("range: 0-%d",mipmapMax);
+		if (gaveFetcherSomeValues)
+		{
+			timepointHint = String.format("range: 0-%d",timepointMax);
+			setupHint     = String.format("range: 0-%d",setupMax);
+			mipmapHint    = String.format("range: 0-%d",mipmapMax);
+		}
+		else
+		{
+			timepointHint = "range: 0-?";
+			setupHint     = timepointHint;
+			mipmapHint    = timepointHint;
+		}
 
 		//second, enforce them
 		enforceMaxTimepoint();
@@ -188,7 +209,10 @@ public class ImportPlugIn implements Command
 	@Override
 	//NB: this function intentionally ignores *Max attributes and does its
 	//    own checking for proper/allowed values because non-GUI usage is
-	//    not (should not) be aware of the *Max siblings (which are helpers for GUI only)
+	//    not (should not) be aware of the *Max siblings (which are helpers
+	//    for GUI only), and because GUI dialog injects last used values after
+	//    the callbacks are called and so the *Max values won't get updated
+	//    (while xmlFile might be pointing good/at existing file).
 	public void run()
 	{
 		if (xmlFile != null)
