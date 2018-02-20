@@ -49,7 +49,7 @@ public class ImportPlugIn implements Command
 		style = FileWidget.OPEN_STYLE,
 		initializer = "fetchMaxValuesFromXML",
 		callback = "fetchMaxValuesFromXML")
-	private File xmlFile = null;
+	public File xmlFile = null;
 
 	//input timepoint index
 	@Parameter(visibility = ItemVisibility.MESSAGE, persist = false, required = false,
@@ -59,7 +59,7 @@ public class ImportPlugIn implements Command
 	@Parameter(label = "selected timepoint index:",
 		min="0",
 		callback="enforceMaxTimepoint")
-	private int timepointVal = 0;
+	public int timepointVal = 0;
 	private int timepointMax = 0;
 
 	//input setup index
@@ -70,7 +70,7 @@ public class ImportPlugIn implements Command
 	@Parameter(label = "selected setup index:",
 		min="0",
 		callback="enforceMaxSetup")
-	private int setupVal = 0;
+	public int setupVal = 0;
 	private int setupMax = 0;
 
 	//input mipmap index
@@ -81,12 +81,13 @@ public class ImportPlugIn implements Command
 	@Parameter(label = "selected resolution level:",
 		min="0",
 		callback="enforceMaxMipmap")
-	private int mipmapVal = 0;
+	public int mipmapVal = 0;
 	private int mipmapMax = 0;
 
 	//input checkbox
 	@Parameter(label = "open as virtual stack:")
-	private boolean openAsVirtualStack = false;
+	public boolean openAsVirtualStack = false;
+
 
 	//output image
 	@Parameter(type = ItemIO.OUTPUT)
