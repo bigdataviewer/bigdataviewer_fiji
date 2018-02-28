@@ -315,7 +315,7 @@ public class ExportImagePlusPlugIn implements Command
 
 	static String lastChunkSizes = "{32,32,4}, {16,16,8}, {8,8,8}";
 
-	static int lastMinMaxChoice = 2;
+	static int lastMinMaxChoice = 1;
 
 	static double lastMin = 0;
 
