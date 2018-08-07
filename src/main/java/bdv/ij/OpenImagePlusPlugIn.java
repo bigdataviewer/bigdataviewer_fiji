@@ -56,8 +56,21 @@ public class OpenImagePlusPlugIn implements Command
 	{
 		System.setProperty( "apple.laf.useScreenMenuBar", "true" );
 		new ImageJ();
-		IJ.run( "Confocal Series (2.2MB)" );
-//		IJ.run( "Fly Brain (1MB)" );
+
+
+//		IJ.run("Confocal Series (2.2MB)");
+//		IJ.run("Confocal Series (2.2MB)");
+//		IJ.run("Fly Brain (1MB)");
+		
+//		ImagePlus ip1 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/mri-stack.tif");
+//		ImagePlus ip2 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/flybrain.tif");
+		
+		ImagePlus ip1 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/confocal-series.tif");
+		ImagePlus ip2 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/confocal_grad.tif");
+
+		ip1.show();
+		ip2.show();
+
 		new OpenImagePlusPlugIn().run();
 	}
 
@@ -95,15 +108,18 @@ public class OpenImagePlusPlugIn implements Command
 
 		AbstractSpimData< ? > spimData;
 		CacheControl cache = null;
+		int setup_id_offset = 0;
 		for( int i = 0; i < nImages; i++ )
 		{
 			if( !gd.getNextBoolean() )
 				continue;
 
 			ImagePlus imp = WindowManager.getImage( idList[ i ]);
-			spimData = load( imp, converterSetups, sources );
+			spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if( spimData != null )
 				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
+			
+			setup_id_offset += imp.getChannel();
 		}
 
 		int nTimepoints = 1;
@@ -129,7 +145,8 @@ public class OpenImagePlusPlugIn implements Command
 		}
 	}
 
-	protected AbstractSpimData< ? > load( ImagePlus imp, ArrayList< ConverterSetup > converterSetups, ArrayList< SourceAndConverter< ? >> sources )
+	protected AbstractSpimData< ? > load( ImagePlus imp, ArrayList< ConverterSetup > converterSetups, ArrayList< SourceAndConverter< ? >> sources, 
+			int setup_id_offset )
 	{
 		// check the image type
 		switch ( imp.getType() )
@@ -218,8 +235,8 @@ public class OpenImagePlusPlugIn implements Command
 		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
-			final BasicViewSetup setup = new BasicViewSetup( s, String.format( "channel %d", s + 1 ), size, voxelSize );
-			setup.setAttribute( new Channel( s + 1 ) );
+			final BasicViewSetup setup = new BasicViewSetup( s, String.format( imp.getTitle() + " channel %d", s + 1 ), size, voxelSize );
+			setup.setAttribute( new Channel( setup_id_offset + s + 1 ) );
 			setups.put( s, setup );
 		}
 
