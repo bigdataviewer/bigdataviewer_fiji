@@ -56,8 +56,8 @@ public class OpenImagePlusPlugIn implements Command
 	{
 		System.setProperty( "apple.laf.useScreenMenuBar", "true" );
 		new ImageJ();
-		IJ.run("Confocal Series (2.2MB)");
-//		IJ.run("Fly Brain (1MB)");
+		IJ.run( "Confocal Series (2.2MB)" );
+//		IJ.run( "Fly Brain (1MB)" );
 		new OpenImagePlusPlugIn().run();
 	}
 

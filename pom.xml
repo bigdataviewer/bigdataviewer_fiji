@@ -5,13 +5,13 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>17.1.1</version>
+		<version>22.2.0</version>
 		<relativePath />
 	</parent>
 
 	<groupId>sc.fiji</groupId>
 	<artifactId>bigdataviewer_fiji</artifactId>
-	<version>4.0.3-SNAPSHOT</version>
+	<version>5.0.1-SNAPSHOT</version>
 
 	<name>BigDataViewer Fiji</name>
 	<description>Fiji plugins for starting BigDataViewer and exporting data.</description>
@@ -92,11 +92,6 @@
 		<package-name>bdv.ij</package-name>
 		<license.licenseName>gpl_v3</license.licenseName>
 		<license.copyrightOwners>BigDataViewer developers.</license.copyrightOwners>
-
-		<imglib2.version>4.2.1</imglib2.version>
-		<imglib2-ui.version>2.0.0-beta-32</imglib2-ui.version>
-		<bigdataviewer-core.version>4.1.0</bigdataviewer-core.version>
-		<SPIM_Registration.version>5.0.13</SPIM_Registration.version>
 
 		<!-- NB: Deploy releases to the ImageJ Maven repository. -->
 		<releaseProfiles>deploy-to-imagej</releaseProfiles>
