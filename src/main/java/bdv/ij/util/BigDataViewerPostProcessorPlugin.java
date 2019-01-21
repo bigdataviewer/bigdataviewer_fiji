@@ -10,6 +10,9 @@ import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 
 @Plugin(type = PostprocessorPlugin.class, priority = Priority.VERY_LOW - 1)
 public class BigDataViewerPostProcessorPlugin extends AbstractPostprocessorPlugin {
@@ -31,6 +34,15 @@ public class BigDataViewerPostProcessorPlugin extends AbstractPostprocessorPlugi
                 final Object o = module.getOutput(output.getName());
                 if (o instanceof BigDataViewer) {
                     os.addObject(o);
+                    ((BigDataViewer) o).getViewerFrame().addWindowListener(new WindowAdapter()
+                    {
+                        @Override
+                        public void windowClosing(WindowEvent e)
+                        {
+                            os.removeObject(o);
+                            e.getWindow().dispose();
+                        }
+                    });
                 }
             }
         });
