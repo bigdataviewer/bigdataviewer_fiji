@@ -43,6 +43,7 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
 @Plugin(type = Command.class, menuPath = "File>Import>BigDataViewer...")
 public class ImportPlugIn implements Command
 {
+
 	public static String xmlFile = "";
 	public static int timepoint = 0;
 	public static int setup = 0;

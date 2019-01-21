@@ -4,11 +4,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import net.imagej.ImageJ;
 import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
 
+import org.scijava.ItemIO;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import bdv.BigDataViewer;
@@ -25,9 +29,7 @@ import bdv.viewer.ViewerOptions;
 import bdv.viewer.VisibilityAndGrouping;
 import ij.CompositeImage;
 import ij.IJ;
-import ij.ImageJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.process.LUT;
 import mpicbg.spim.data.generic.sequence.BasicImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
@@ -43,35 +45,18 @@ import mpicbg.spim.data.sequence.TimePoints;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
-@Plugin(type = Command.class,
-	menuPath = "Plugins>BigDataViewer>Open Current Image")
+@Plugin(type = Command.class,menuPath = "Plugins>BigDataViewer>Open Current Image")
 public class OpenImagePlusPlugIn implements Command
 {
-	public static void main( final String[] args )
-	{
-		System.setProperty( "apple.laf.useScreenMenuBar", "true" );
-		new ImageJ();
-		IJ.run( "Confocal Series (2.2MB)" );
-//		IJ.run( "Fly Brain (1MB)" );
-		new OpenImagePlusPlugIn().run();
-	}
+	@Parameter(type = ItemIO.INPUT)
+	ImagePlus imp;
+
+	@Parameter(type = ItemIO.OUTPUT)
+	BigDataViewer bdv;
 
 	@Override
 	public void run()
 	{
-		if ( ij.Prefs.setIJMenuBar )
-			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
-
-		// get the current image
-		final ImagePlus imp = WindowManager.getCurrentImage();
-
-		// make sure there is one
-		if ( imp == null )
-		{
-			IJ.showMessage( "Please open an image first." );
-			return;
-		}
-
 		// check the image type
 		switch ( imp.getType() )
 		{
@@ -182,13 +167,22 @@ public class OpenImagePlusPlugIn implements Command
 		final SpimDataMinimal spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
 		WrapBasicImgLoader.wrapImgLoaderIfNecessary( spimData );
 
-		final BigDataViewer bdv = BigDataViewer.open( spimData, "BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
+		bdv = BigDataViewer.open( spimData, "BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
 		final SetupAssignments sa = bdv.getSetupAssignments();
 		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
 		if ( imp.isComposite() )
 			transferChannelSettings( ( CompositeImage ) imp, sa, vg );
 		else
 			transferImpSettings( imp, sa );
+	}
+
+	public static void main( final String[] args )
+	{
+		ImagePlus image = IJ.openImage("http://imagej.nih.gov/ij/images/confocal-series.zip");
+		final net.imagej.ImageJ ij = new ImageJ();
+		ij.ui().showUI();
+		ij.get(CommandService.class).run(OpenImagePlusPlugIn.class,true, "imp", image);
+
 	}
 
 	protected void transferChannelSettings( final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )

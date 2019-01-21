@@ -7,7 +7,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,25 +16,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
+import net.imagej.ImageJ;
 import org.apache.commons.lang.StringUtils;
 import org.scijava.command.Command;
+import org.scijava.command.CommandService;
+import org.scijava.log.LogService;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-
-import bdv.BigDataViewer;
-import bdv.ij.util.ProgressWriterIJ;
-import bdv.viewer.ViewerOptions;
-import ij.IJ;
-import ij.ImageJ;
-import mpicbg.spim.data.SpimDataException;
 
 /**
  * @author HongKee Moon &lt;moon@mpi-cbg.de&gt;
@@ -48,32 +42,18 @@ public class BigDataBrowserPlugIn implements Command
 
 	private final Map< String, String > datasetUrlMap = new HashMap<>();
 
-	public static String serverUrl = "http://";
+	@Parameter(required = false)
+	String serverUrl = "http://";
+
+	@Parameter
+	CommandService cs;
+
+	@Parameter
+	LogService ls;
 
 	@Override
 	public void run()
 	{
-		if ( ij.Prefs.setIJMenuBar )
-			System.setProperty( "apple.laf.useScreenMenuBar", "true" );
-
-		BufferedImage image = null;
-		try
-		{
-			image = ImageIO.read( getClass().getResourceAsStream( "/fiji.png" ) );
-		}
-		catch ( final IOException e )
-		{
-			e.printStackTrace();
-		}
-
-		final Object remoteUrl = JOptionPane.showInputDialog( null, "Enter BigDataServer Remote URL:", "BigDataServer",
-				JOptionPane.QUESTION_MESSAGE, new ImageIcon( image ), null, serverUrl );
-
-		if ( remoteUrl == null )
-			return;
-
-		serverUrl = remoteUrl.toString();
-
 		final ArrayList< String > nameList = new ArrayList<>();
 		try
 		{
@@ -81,8 +61,9 @@ public class BigDataBrowserPlugIn implements Command
 		}
 		catch ( final IOException e )
 		{
-			IJ.showMessage( "Error connecting to server at " + serverUrl );
+			ls.error("Error connecting to server at " + serverUrl);
 			e.printStackTrace();
+			return;
 		}
 		createDatasetListUI( serverUrl, nameList.toArray() );
 	}
@@ -154,16 +135,12 @@ public class BigDataBrowserPlugIn implements Command
 					final int index = list.locationToIndex( evt.getPoint() );
 					final String key = String.valueOf( list.getModel().getElementAt( index ) );
 					System.out.println( key );
-					try
-					{
-						final String filename = datasetUrlMap.get( key );
-						final String title = new File( filename ).getName();
-						BigDataViewer.open( filename, title, new ProgressWriterIJ(), ViewerOptions.options() );
-					}
-					catch ( final SpimDataException e )
-					{
-						e.printStackTrace();
-					}
+					final String filename = datasetUrlMap.get( key );
+					final String title = new File( filename ).getName();
+
+					cs.run(BigDataServerPlugIn.class,true,
+							"urlServer",remoteUrl,
+							"datasetName", title);
 				}
 			}
 		} );
@@ -203,7 +180,8 @@ public class BigDataBrowserPlugIn implements Command
 
 	public static void main( final String[] args )
 	{
-		ImageJ.main( args );
-		new BigDataBrowserPlugIn().run();
+		final net.imagej.ImageJ ij = new ImageJ();
+		ij.ui().showUI();
+		ij.command().run(BigDataBrowserPlugIn.class, true);
 	}
 }
