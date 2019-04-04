@@ -90,13 +90,10 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 
 		final ArrayImgFactory< T > factory;
 
-		final T type;
-
 		public ArrayImgLoader( final T type )
 		{
 			opener = new ImgOpener();
-			factory = new ArrayImgFactory<>();
-			this.type = type;
+			factory = new ArrayImgFactory<>( type );
 		}
 
 		@Override
@@ -105,7 +102,7 @@ public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 			try
 			{
 				System.out.println( fn );
-				return opener.openImgs( fn, factory, type ).get( 0 );
+				return opener.openImgs( fn, factory ).get( 0 );
 			}
 			catch ( final ImgIOException e )
 			{

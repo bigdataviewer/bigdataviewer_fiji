@@ -5,6 +5,7 @@ import java.util.HashMap;
 import org.scijava.Context;
 import org.scijava.app.AppService;
 import org.scijava.app.StatusService;
+import org.scijava.io.location.FileLocation;
 
 import ij.ImagePlus;
 import io.scif.SCIFIOService;
@@ -40,8 +41,6 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 
 	private final ArrayImgFactory< UnsignedShortType > factory;
 
-	private final UnsignedShortType type;
-
 	final HashMap< ViewId, String > filenames;
 
 	private boolean useImageJOpener;
@@ -51,8 +50,7 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 		this.filenames = filenames;
 		this.useImageJOpener = useImageJOpener;
 		opener = useImageJOpener ? null : new ImgOpener( new Context( SCIFIOService.class, AppService.class, StatusService.class ) );
-		factory = new ArrayImgFactory<>();
-		type = new UnsignedShortType();
+		factory = new ArrayImgFactory<>( new UnsignedShortType() );
 	}
 
 	@Override
@@ -87,7 +85,7 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 
 		try
 		{
-			return opener.openImg( fn, factory, type );
+			return opener.openImgs( new FileLocation( fn ), factory ).get( 0 );
 		}
 		catch ( final ImgIOException e )
 		{
@@ -98,6 +96,6 @@ public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedSho
 	@Override
 	public UnsignedShortType getImageType()
 	{
-		return type;
+		return factory.type();
 	}
 }
