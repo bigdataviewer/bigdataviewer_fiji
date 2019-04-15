@@ -1,6 +1,7 @@
 package bdv.img.imagestack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Function;
 
 import net.imglib2.RandomAccessibleInterval;
@@ -28,22 +29,42 @@ public class ImageStackImageLoader< T extends NumericType< T > & NativeType< T >
 {
 	public static ImageStackImageLoader< UnsignedByteType, ByteArray > createUnsignedByteInstance( final ImagePlus imp )
 	{
-		return new ImageStackImageLoader<>( new UnsignedByteType(), imp, array -> new ByteArray( ( byte[] ) array ) );
+		return createUnsignedByteInstance( imp, 0 );
+	}
+
+	public static ImageStackImageLoader< UnsignedByteType, ByteArray > createUnsignedByteInstance( final ImagePlus imp, int offset )
+	{
+		return new ImageStackImageLoader<>( new UnsignedByteType(), imp, array -> new ByteArray( ( byte[] ) array ), offset );
 	}
 
 	public static ImageStackImageLoader< UnsignedShortType, ShortArray > createUnsignedShortInstance( final ImagePlus imp )
 	{
-		return new ImageStackImageLoader<>( new UnsignedShortType(), imp, array -> new ShortArray( ( short[] ) array ) );
+		return createUnsignedShortInstance( imp, 0 );
+	}
+
+	public static ImageStackImageLoader< UnsignedShortType, ShortArray > createUnsignedShortInstance( final ImagePlus imp, int offset )
+	{
+		return new ImageStackImageLoader<>( new UnsignedShortType(), imp, array -> new ShortArray( ( short[] ) array ), offset );
 	}
 
 	public static ImageStackImageLoader< FloatType, FloatArray > createFloatInstance( final ImagePlus imp )
 	{
-		return new ImageStackImageLoader<>( new FloatType(), imp, array -> new FloatArray( ( float[] ) array ) );
+		return createFloatInstance( imp, 0 );
+	}
+
+	public static ImageStackImageLoader< FloatType, FloatArray > createFloatInstance( final ImagePlus imp, int offset )
+	{
+		return new ImageStackImageLoader<>( new FloatType(), imp, array -> new FloatArray( ( float[] ) array ), offset );
 	}
 
 	public static ImageStackImageLoader< ARGBType, IntArray > createARGBInstance( final ImagePlus imp )
 	{
-		return new ImageStackImageLoader<>( new ARGBType(), imp, array -> new IntArray( ( int[] ) array ) );
+		return createARGBInstance( imp, 0 );
+	}
+
+	public static ImageStackImageLoader< ARGBType, IntArray > createARGBInstance( final ImagePlus imp, int offset )
+	{
+		return new ImageStackImageLoader<>( new ARGBType(), imp, array -> new IntArray( ( int[] ) array ), offset );
 	}
 
 	private final T type;
@@ -52,35 +73,39 @@ public class ImageStackImageLoader< T extends NumericType< T > & NativeType< T >
 
 	private final long[] dim;
 
-	private final ArrayList< SetupImgLoader > setupImgLoaders;
+	private final HashMap< Integer, SetupImgLoader > setupImgLoaders;
 
 	private final Function< Object, A > wrapPixels;
 
-	public ImageStackImageLoader( final T type, final ImagePlus imp, final Function< Object, A > wrapPixels )
+	public ImageStackImageLoader( final T type, final ImagePlus imp, final Function< Object, A > wrapPixels, int setup_id_offset )
 	{
 		this.type = type;
 		this.imp = imp;
 		this.wrapPixels = wrapPixels;
 		this.dim = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
 		final int numSetups = imp.getNChannels();
-		setupImgLoaders = new ArrayList<>();
-		for ( int setupId = 0; setupId < numSetups; ++setupId )
-			setupImgLoaders.add( new SetupImgLoader( setupId ) );
+		setupImgLoaders = new HashMap<>();
+		for ( int c = 0; c < numSetups; ++c )
+			setupImgLoaders.put( (setup_id_offset  + c), new SetupImgLoader( c ) );
+	}
+
+	public ImageStackImageLoader( final T type, final ImagePlus imp, final Function< Object, A > wrapPixels )
+	{
+		this( type, imp, wrapPixels, 0 );
 	}
 
 	public class SetupImgLoader implements BasicSetupImgLoader< T >
 	{
-		private final int setupId;
+		private final int channel;
 
-		public SetupImgLoader( final int setupId )
+		public SetupImgLoader( final int channel )
 		{
-			this.setupId = setupId;
+			this.channel = channel + 1;
 		}
 
 		@Override
 		public RandomAccessibleInterval< T > getImage( final int timepointId, final ImgLoaderHint... hints )
 		{
-			final int channel = setupId + 1;
 			final int frame = timepointId + 1;
 			final ArrayList< A > slices = new ArrayList<>();
 			for ( int slice = 1; slice <= dim[ 2 ]; ++slice )

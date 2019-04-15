@@ -56,21 +56,8 @@ public class OpenImagePlusPlugIn implements Command
 	{
 		System.setProperty( "apple.laf.useScreenMenuBar", "true" );
 		new ImageJ();
-
-
-//		IJ.run("Confocal Series (2.2MB)");
-//		IJ.run("Confocal Series (2.2MB)");
-//		IJ.run("Fly Brain (1MB)");
-		
-//		ImagePlus ip1 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/mri-stack.tif");
-//		ImagePlus ip2 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/flybrain.tif");
-		
-		ImagePlus ip1 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/confocal-series.tif");
-		ImagePlus ip2 = IJ.openImage("/groups/saalfeld/home/bogovicj/tmp/confocal_grad.tif");
-
-		ip1.show();
-		ip2.show();
-
+		IJ.run( "Confocal Series (2.2MB)" );
+//		IJ.run( "Fly Brain (1MB)" );
 		new OpenImagePlusPlugIn().run();
 	}
 
@@ -109,17 +96,19 @@ public class OpenImagePlusPlugIn implements Command
 		AbstractSpimData< ? > spimData;
 		CacheControl cache = null;
 		int setup_id_offset = 0;
+		ArrayList<ImagePlus> imgList = new ArrayList<ImagePlus>();
 		for( int i = 0; i < nImages; i++ )
 		{
 			if( !gd.getNextBoolean() )
 				continue;
 
 			ImagePlus imp = WindowManager.getImage( idList[ i ]);
+			imgList.add( imp );
 			spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if( spimData != null )
 				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
 			
-			setup_id_offset += imp.getChannel();
+			setup_id_offset += imp.getNChannels();
 		}
 
 		int nTimepoints = 1;
@@ -131,17 +120,15 @@ public class OpenImagePlusPlugIn implements Command
 		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
 		vg.setFusedEnabled( true );
 
-		int channel_offset = 0;
-		for( int i = 0; i < nImages; i++ )
+		int channelOffset = 0;
+		for( ImagePlus imp : imgList )
 		{
-			ImagePlus imp = WindowManager.getImage( idList[ i ]);
 			if ( imp.isComposite() )
-			{
-				transferChannelSettings( channel_offset, ( CompositeImage ) imp, sa, vg );
-				channel_offset += imp.getNChannels();
-			}
+				transferChannelSettings( channelOffset, ( CompositeImage ) imp, sa, vg );
 			else
-				transferImpSettings( imp, sa );
+				transferImpSettings( channelOffset, imp, sa );
+
+			channelOffset += imp.getNChannels();
 		}
 	}
 
@@ -184,9 +171,6 @@ public class OpenImagePlusPlugIn implements Command
 		// propose reasonable mipmap settings
 //		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps( new BasicViewSetup( 0, "", size, voxelSize ) );
 
-//		imp.getDisplayRangeMin();
-//		imp.getDisplayRangeMax();
-
 		// create ImgLoader wrapping the image
 		final BasicImgLoader imgLoader;
 		if ( imp.getStack().isVirtual() )
@@ -194,17 +178,17 @@ public class OpenImagePlusPlugIn implements Command
 			switch ( imp.getType() )
 			{
 			case ImagePlus.GRAY8:
-				imgLoader = VirtualStackImageLoader.createUnsignedByteInstance( imp );
+				imgLoader = VirtualStackImageLoader.createUnsignedByteInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.GRAY16:
-				imgLoader = VirtualStackImageLoader.createUnsignedShortInstance( imp );
+				imgLoader = VirtualStackImageLoader.createUnsignedShortInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.GRAY32:
-				imgLoader = VirtualStackImageLoader.createFloatInstance( imp );
+				imgLoader = VirtualStackImageLoader.createFloatInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.COLOR_RGB:
 			default:
-				imgLoader = VirtualStackImageLoader.createARGBInstance( imp );
+				imgLoader = VirtualStackImageLoader.createARGBInstance( imp, setup_id_offset );
 				break;
 			}
 		}
@@ -213,17 +197,17 @@ public class OpenImagePlusPlugIn implements Command
 			switch ( imp.getType() )
 			{
 			case ImagePlus.GRAY8:
-				imgLoader = ImageStackImageLoader.createUnsignedByteInstance( imp );
+				imgLoader = ImageStackImageLoader.createUnsignedByteInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.GRAY16:
-				imgLoader = ImageStackImageLoader.createUnsignedShortInstance( imp );
+				imgLoader = ImageStackImageLoader.createUnsignedShortInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.GRAY32:
-				imgLoader = ImageStackImageLoader.createFloatInstance( imp );
+				imgLoader = ImageStackImageLoader.createFloatInstance( imp, setup_id_offset );
 				break;
 			case ImagePlus.COLOR_RGB:
 			default:
-				imgLoader = ImageStackImageLoader.createARGBInstance( imp );
+				imgLoader = ImageStackImageLoader.createARGBInstance( imp, setup_id_offset );
 				break;
 			}
 		}
@@ -235,9 +219,9 @@ public class OpenImagePlusPlugIn implements Command
 		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
-			final BasicViewSetup setup = new BasicViewSetup( s, String.format( imp.getTitle() + " channel %d", s + 1 ), size, voxelSize );
-			setup.setAttribute( new Channel( setup_id_offset + s + 1 ) );
-			setups.put( s, setup );
+			final BasicViewSetup setup = new BasicViewSetup( setup_id_offset + s, String.format( imp.getTitle() + " channel %d", s + 1 ), size, voxelSize );
+			setup.setAttribute( new Channel( s + 1 ) );
+			setups.put( setup_id_offset + s, setup );
 		}
 
 		// create timepoints
@@ -252,7 +236,7 @@ public class OpenImagePlusPlugIn implements Command
 		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
 		for ( int t = 0; t < numTimepoints; ++t )
 			for ( int s = 0; s < numSetups; ++s )
-				registrations.add( new ViewRegistration( t, s, sourceTransform ) );
+				registrations.add( new ViewRegistration( t, setup_id_offset + s, sourceTransform ) );
 
 		final File basePath = new File(".");
 		final AbstractSpimData< ? > spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
@@ -262,7 +246,7 @@ public class OpenImagePlusPlugIn implements Command
 		return spimData;
 	}
 
-	protected void transferChannelSettings( int channel_offset, final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
+	protected void transferChannelSettings( int channelOffset, final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
 	{
 		final int nChannels = ci.getNChannels();
 		final int mode = ci.getCompositeMode();
@@ -270,7 +254,7 @@ public class OpenImagePlusPlugIn implements Command
 		for ( int c = 0; c < nChannels; ++c )
 		{
 			final LUT lut = ci.getChannelLut( c + 1 );
-			final ConverterSetup setup = setupAssignments.getConverterSetups().get( channel_offset + c );
+			final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + c );
 			if ( transferColor )
 				setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
 			setup.setDisplayRange( lut.min, lut.max );
@@ -286,9 +270,9 @@ public class OpenImagePlusPlugIn implements Command
 		visibility.setCurrentSource( ci.getChannel() - 1 );
 	}
 
-	protected void transferImpSettings( final ImagePlus imp, final SetupAssignments setupAssignments )
+	protected void transferImpSettings( int setupIndex, final ImagePlus imp, final SetupAssignments setupAssignments )
 	{
-		final ConverterSetup setup = setupAssignments.getConverterSetups().get( 0 );
+		final ConverterSetup setup = setupAssignments.getConverterSetups().get( setupIndex );
 		setup.setDisplayRange( imp.getDisplayRangeMin(), imp.getDisplayRangeMax() );
 	}
 }

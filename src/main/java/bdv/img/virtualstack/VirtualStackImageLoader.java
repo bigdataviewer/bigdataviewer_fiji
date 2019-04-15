@@ -1,6 +1,7 @@
 package bdv.img.virtualstack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import bdv.AbstractViewerSetupImgLoader;
 import bdv.ViewerImgLoader;
@@ -63,8 +64,13 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 {
 	public static VirtualStackImageLoader< FloatType, VolatileFloatType, VolatileFloatArray > createFloatInstance( final ImagePlus imp )
 	{
+		return createFloatInstance( imp, 0 );
+	}
+
+	public static VirtualStackImageLoader< FloatType, VolatileFloatType, VolatileFloatArray > createFloatInstance( final ImagePlus imp, final int offset )
+	{
 		return new VirtualStackImageLoader< FloatType, VolatileFloatType, VolatileFloatArray >(
-				imp, new VirtualStackVolatileFloatArrayLoader( imp ), new FloatType(), new VolatileFloatType() )
+				imp, new VirtualStackVolatileFloatArrayLoader( imp ), new FloatType(), new VolatileFloatType(), offset )
 		{
 			@Override
 			protected void linkType( final CachedCellImg< FloatType, VolatileFloatArray > img )
@@ -82,8 +88,13 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 
 	public static VirtualStackImageLoader< UnsignedShortType, VolatileUnsignedShortType, VolatileShortArray > createUnsignedShortInstance( final ImagePlus imp )
 	{
+		return createUnsignedShortInstance( imp, 0 );
+	}
+
+	public static VirtualStackImageLoader< UnsignedShortType, VolatileUnsignedShortType, VolatileShortArray > createUnsignedShortInstance( final ImagePlus imp, final int offset )
+	{
 		return new VirtualStackImageLoader< UnsignedShortType, VolatileUnsignedShortType, VolatileShortArray >(
-				imp, new VirtualStackVolatileShortArrayLoader( imp ), new UnsignedShortType(), new VolatileUnsignedShortType() )
+				imp, new VirtualStackVolatileShortArrayLoader( imp ), new UnsignedShortType(), new VolatileUnsignedShortType(), offset )
 		{
 			@Override
 			protected void linkType( final CachedCellImg< UnsignedShortType, VolatileShortArray > img )
@@ -101,8 +112,13 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 
 	public static VirtualStackImageLoader< UnsignedByteType, VolatileUnsignedByteType, VolatileByteArray > createUnsignedByteInstance( final ImagePlus imp )
 	{
+		return createUnsignedByteInstance( imp, 0 );
+	}
+
+	public static VirtualStackImageLoader< UnsignedByteType, VolatileUnsignedByteType, VolatileByteArray > createUnsignedByteInstance( final ImagePlus imp, final int offset )
+	{
 		return new VirtualStackImageLoader< UnsignedByteType, VolatileUnsignedByteType, VolatileByteArray >(
-				imp, new VirtualStackVolatileByteArrayLoader( imp ), new UnsignedByteType(), new VolatileUnsignedByteType() )
+				imp, new VirtualStackVolatileByteArrayLoader( imp ), new UnsignedByteType(), new VolatileUnsignedByteType(), offset )
 		{
 			@Override
 			protected void linkType( final CachedCellImg< UnsignedByteType, VolatileByteArray > img )
@@ -120,8 +136,13 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 
 	public static VirtualStackImageLoader< ARGBType, VolatileARGBType, VolatileIntArray > createARGBInstance( final ImagePlus imp )
 	{
+		return createARGBInstance( imp, 0 );
+	}
+
+	public static VirtualStackImageLoader< ARGBType, VolatileARGBType, VolatileIntArray > createARGBInstance( final ImagePlus imp, final int offset )
+	{
 		return new VirtualStackImageLoader< ARGBType, VolatileARGBType, VolatileIntArray >(
-				imp, new VirtualStackVolatileARGBArrayLoader( imp ), new ARGBType(), new VolatileARGBType() )
+				imp, new VirtualStackVolatileARGBArrayLoader( imp ), new ARGBType(), new VolatileARGBType(), offset )
 		{
 			@Override
 			protected void linkType( final CachedCellImg< ARGBType, VolatileIntArray > img )
@@ -149,18 +170,23 @@ public abstract class VirtualStackImageLoader< T extends NativeType< T >, V exte
 
 	private final int[] cellDimensions;
 
-	private final ArrayList< SetupImgLoader > setupImgLoaders;
+	private final HashMap< Integer, SetupImgLoader > setupImgLoaders;
 
-	protected VirtualStackImageLoader( final ImagePlus imp, final CacheArrayLoader< A > loader, final T type, final V volatileType )
+	protected VirtualStackImageLoader( final ImagePlus imp, final CacheArrayLoader< A > loader, final T type, final V volatileType, int setupOffset )
 	{
 		this.loader = loader;
 		dimensions = new long[] { imp.getWidth(), imp.getHeight(), imp.getNSlices() };
 		cellDimensions = new int[] { imp.getWidth(), imp.getHeight(), 1 };
 		final int numSetups = imp.getNChannels();
 		cache = new VolatileGlobalCellCache( 1, 1 );
-		setupImgLoaders = new ArrayList<>();
+		setupImgLoaders = new HashMap<>();
 		for ( int setupId = 0; setupId < numSetups; ++setupId )
-			setupImgLoaders.add( new SetupImgLoader( setupId, type, volatileType ) );
+			setupImgLoaders.put( setupOffset + setupId, new SetupImgLoader( setupId, type, volatileType ) );
+	}
+
+	protected VirtualStackImageLoader( final ImagePlus imp, final CacheArrayLoader< A > loader, final T type, final V volatileType )
+	{
+		this( imp, loader, type, volatileType, 0 );
 	}
 
 	protected abstract void linkType( CachedCellImg< T, A > img );
