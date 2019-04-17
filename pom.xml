@@ -64,6 +64,11 @@
 			<url>http://imagej.net/User:Moon</url>
 			<properties><id>hkmoon</id></properties>
 		</contributor>
+		<contributor>
+			<name>John Bogovic</name>
+			<url>https://imagej.net/User:Bogovic</url>
+			<properties><id>bogovicj</id></properties>
+		</contributor>
 	</contributors>
 
 	<mailingLists>
