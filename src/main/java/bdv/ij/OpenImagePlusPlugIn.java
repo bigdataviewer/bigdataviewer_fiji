@@ -77,19 +77,35 @@ public class OpenImagePlusPlugIn implements Command
 			return;
 		}
 
-		final int[] idList = WindowManager.getIDList();
-		final String[] nameList = new String[ nImages ];
-		GenericDialog gd = new GenericDialog( "Images to open" );
-		for ( int i = 0; i < nImages; i++ )
+		ArrayList< ImagePlus > inputImgList = new ArrayList<>();
+		if ( nImages > 1 )
 		{
-			ImagePlus imp = WindowManager.getImage( idList[ i ] );
-			nameList[ i ] = imp.getTitle();
-			gd.addCheckbox( nameList[ i ], imp == curr );
-		}
+			final int[] idList = WindowManager.getIDList();
+			final String[] nameList = new String[ nImages ];
+			GenericDialog gd = new GenericDialog( "Images to open" );
+			for ( int i = 0; i < nImages; i++ )
+			{
+				ImagePlus imp = WindowManager.getImage( idList[ i ] );
+				nameList[ i ] = imp.getTitle();
+				gd.addCheckbox( nameList[ i ], imp == curr );
+			}
 
-		gd.showDialog();
-		if ( gd.wasCanceled() )
-			return;
+			gd.showDialog();
+			if ( gd.wasCanceled() )
+				return;
+
+			for ( int i = 0; i < nImages; i++ )
+			{
+				if ( !gd.getNextBoolean() )
+					continue;
+				ImagePlus imp = WindowManager.getImage( idList[ i ] );
+				inputImgList.add( imp );
+			}
+		}
+		else
+		{
+			inputImgList.add( curr );
+		}
 
 		final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
 		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList<>();
@@ -99,12 +115,8 @@ public class OpenImagePlusPlugIn implements Command
 		int nTimepoints = 1;
 		int setup_id_offset = 0;
 		ArrayList< ImagePlus > imgList = new ArrayList<>();
-		for ( int i = 0; i < nImages; i++ )
+		for ( ImagePlus imp : inputImgList )
 		{
-			if ( !gd.getNextBoolean() )
-				continue;
-
-			ImagePlus imp = WindowManager.getImage( idList[ i ] );
 			spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if ( spimData != null )
 			{
