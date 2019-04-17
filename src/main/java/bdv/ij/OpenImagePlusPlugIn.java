@@ -96,40 +96,43 @@ public class OpenImagePlusPlugIn implements Command
 
 		AbstractSpimData< ? > spimData;
 		CacheControl cache = null;
+		int nTimepoints = 1;
 		int setup_id_offset = 0;
-		ArrayList< ImagePlus > imgList = new ArrayList< ImagePlus >();
+		ArrayList< ImagePlus > imgList = new ArrayList<>();
 		for ( int i = 0; i < nImages; i++ )
 		{
 			if ( !gd.getNextBoolean() )
 				continue;
 
 			ImagePlus imp = WindowManager.getImage( idList[ i ] );
-			imgList.add( imp );
 			spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if ( spimData != null )
+			{
+				imgList.add( imp );
 				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
-
-			setup_id_offset += imp.getNChannels();
+				setup_id_offset += imp.getNChannels();
+				nTimepoints = Math.max( nTimepoints, imp.getNFrames() );
+			}
 		}
 
-		int nTimepoints = 1;
-		final BigDataViewer bdv = BigDataViewer.open( converterSetups, sources,
-				nTimepoints, cache,
-				"BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
-
-		final SetupAssignments sa = bdv.getSetupAssignments();
-		final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
-		vg.setFusedEnabled( true );
-
-		int channelOffset = 0;
-		for ( ImagePlus imp : imgList )
+		if ( !imgList.isEmpty() )
 		{
-			if ( imp.isComposite() )
-				transferChannelSettings( channelOffset, ( CompositeImage ) imp, sa, vg );
-			else
-				transferImpSettings( channelOffset, imp, sa );
+			final BigDataViewer bdv = BigDataViewer.open( converterSetups, sources,
+					nTimepoints, cache,
+					"BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
 
-			channelOffset += imp.getNChannels();
+			final SetupAssignments sa = bdv.getSetupAssignments();
+			final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
+
+			int channelOffset = 0;
+			int numActiveChannels = 0;
+			for ( ImagePlus imp : imgList )
+			{
+				numActiveChannels += transferChannelVisibility( channelOffset, imp,vg );
+				transferChannelSettings( channelOffset, imp, sa );
+				channelOffset += imp.getNChannels();
+			}
+			vg.setDisplayMode( numActiveChannels > 1 ? DisplayMode.FUSED : DisplayMode.SINGLE );
 		}
 	}
 
@@ -145,14 +148,14 @@ public class OpenImagePlusPlugIn implements Command
 		case ImagePlus.COLOR_RGB:
 			break;
 		default:
-			IJ.showMessage( "Only 8, 16, 32-bit images and RGB images are supported currently!" );
+			IJ.showMessage( imp.getShortTitle() + ": Only 8, 16, 32-bit images and RGB images are supported currently!" );
 			return null;
 		}
 
 		// check the image dimensionality
 		if ( imp.getNDimensions() < 3 )
 		{
-			IJ.showMessage( "Image must be at least 3-dimensional!" );
+			IJ.showMessage( imp.getShortTitle() + ": Image must be at least 3-dimensional!" );
 			return null;
 		}
 
@@ -167,7 +170,7 @@ public class OpenImagePlusPlugIn implements Command
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getNSlices();
-		final FinalDimensions size = new FinalDimensions( new int[] { w, h, d } );
+		final FinalDimensions size = new FinalDimensions( w, h, d );
 
 		// propose reasonable mipmap settings
 //		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps( new BasicViewSetup( 0, "", size, voxelSize ) );
@@ -247,33 +250,65 @@ public class OpenImagePlusPlugIn implements Command
 		return spimData;
 	}
 
-	protected void transferChannelSettings( int channelOffset, final CompositeImage ci, final SetupAssignments setupAssignments, final VisibilityAndGrouping visibility )
+	/**
+	 * @return number of setups that were set active.
+	 */
+	protected int transferChannelVisibility( int channelOffset, final ImagePlus imp, final VisibilityAndGrouping visibility )
 	{
-		final int nChannels = ci.getNChannels();
-		final int mode = ci.getCompositeMode();
-		final boolean transferColor = mode == IJ.COMPOSITE || mode == IJ.COLOR;
-		for ( int c = 0; c < nChannels; ++c )
-		{
-			final LUT lut = ci.getChannelLut( c + 1 );
-			final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + c );
-			if ( transferColor )
-				setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
-			setup.setDisplayRange( lut.min, lut.max );
-		}
-		if ( mode == IJ.COMPOSITE )
+		final int nChannels = imp.getNChannels();
+		final CompositeImage ci = imp.isComposite() ? ( CompositeImage ) imp : null;
+		if ( ci != null && ci.getCompositeMode() == IJ.COMPOSITE )
 		{
 			final boolean[] activeChannels = ci.getActiveChannels();
+			int numActiveChannels = 0;
 			for ( int i = 0; i < activeChannels.length; ++i )
-				visibility.setSourceActive( i, activeChannels[ i ] );
+			{
+				final int setup = channelOffset + i;
+				visibility.setSourceActive( setup, activeChannels[ i ] );
+				visibility.setCurrentSource( setup );
+				numActiveChannels += activeChannels[ i ] ? 1 : 0;
+			}
+			return numActiveChannels;
 		}
 		else
-			visibility.setDisplayMode( DisplayMode.SINGLE );
-		visibility.setCurrentSource( ci.getChannel() - 1 );
+		{
+			final int activeChannel = imp.getChannel() - 1;
+			for ( int i = 0; i < nChannels; ++i )
+				visibility.setSourceActive( channelOffset + i, i == activeChannel );
+			visibility.setCurrentSource( channelOffset + activeChannel );
+			return 1;
+		}
 	}
 
-	protected void transferImpSettings( int setupIndex, final ImagePlus imp, final SetupAssignments setupAssignments )
+	protected void transferChannelSettings( int channelOffset, final ImagePlus imp, final SetupAssignments setupAssignments )
 	{
-		final ConverterSetup setup = setupAssignments.getConverterSetups().get( setupIndex );
-		setup.setDisplayRange( imp.getDisplayRangeMin(), imp.getDisplayRangeMax() );
+		final int nChannels = imp.getNChannels();
+		final CompositeImage ci = imp.isComposite() ? ( CompositeImage ) imp : null;
+		if ( ci != null )
+		{
+			final int mode = ci.getCompositeMode();
+			final boolean transferColor = mode == IJ.COMPOSITE || mode == IJ.COLOR;
+			for ( int c = 0; c < nChannels; ++c )
+			{
+				final LUT lut = ci.getChannelLut( c + 1 );
+				final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + c );
+				if ( transferColor )
+					setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
+				setup.setDisplayRange( lut.min, lut.max );
+			}
+		}
+		else
+		{
+			final double displayRangeMin = imp.getDisplayRangeMin();
+			final double displayRangeMax = imp.getDisplayRangeMax();
+			for ( int i = 0; i < nChannels; ++i )
+			{
+				final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + i );
+				final LUT[] luts = imp.getLuts();
+				if ( luts.length != 0 )
+					setup.setColor( new ARGBType( luts[ 0 ].getRGB( 255 ) ) );
+				setup.setDisplayRange( displayRangeMin, displayRangeMax );
+			}
+		}
 	}
 }
