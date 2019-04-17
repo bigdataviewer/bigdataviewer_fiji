@@ -110,18 +110,17 @@ public class OpenImagePlusPlugIn implements Command
 		final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
 		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList<>();
 
-		AbstractSpimData< ? > spimData;
-		CacheControl cache = null;
+		CacheControl.CacheControls cache = new CacheControl.CacheControls();
 		int nTimepoints = 1;
 		int setup_id_offset = 0;
 		ArrayList< ImagePlus > imgList = new ArrayList<>();
 		for ( ImagePlus imp : inputImgList )
 		{
-			spimData = load( imp, converterSetups, sources, setup_id_offset );
+			AbstractSpimData< ? > spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if ( spimData != null )
 			{
 				imgList.add( imp );
-				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
+				cache.addCacheControl( ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl() );
 				setup_id_offset += imp.getNChannels();
 				nTimepoints = Math.max( nTimepoints, imp.getNFrames() );
 			}
