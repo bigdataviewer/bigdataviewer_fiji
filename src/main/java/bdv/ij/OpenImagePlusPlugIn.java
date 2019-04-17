@@ -79,16 +79,17 @@ public class OpenImagePlusPlugIn implements Command
 
 		final int[] idList = WindowManager.getIDList();
 		final String[] nameList = new String[ nImages ];
-		GenericDialog gd = new GenericDialog("Images to open");
-		for( int i = 0; i < nImages; i++ )
+		GenericDialog gd = new GenericDialog( "Images to open" );
+		for ( int i = 0; i < nImages; i++ )
 		{
-		    ImagePlus imp = WindowManager.getImage( idList[ i ]);
-		    nameList[ i ] = imp.getTitle();
-		    gd.addCheckbox( nameList[i], imp == curr );
+			ImagePlus imp = WindowManager.getImage( idList[ i ] );
+			nameList[ i ] = imp.getTitle();
+			gd.addCheckbox( nameList[ i ], imp == curr );
 		}
 
 		gd.showDialog();
-		if (gd.wasCanceled()) return;
+		if ( gd.wasCanceled() )
+			return;
 
 		final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
 		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList<>();
@@ -96,18 +97,18 @@ public class OpenImagePlusPlugIn implements Command
 		AbstractSpimData< ? > spimData;
 		CacheControl cache = null;
 		int setup_id_offset = 0;
-		ArrayList<ImagePlus> imgList = new ArrayList<ImagePlus>();
-		for( int i = 0; i < nImages; i++ )
+		ArrayList< ImagePlus > imgList = new ArrayList< ImagePlus >();
+		for ( int i = 0; i < nImages; i++ )
 		{
-			if( !gd.getNextBoolean() )
+			if ( !gd.getNextBoolean() )
 				continue;
 
-			ImagePlus imp = WindowManager.getImage( idList[ i ]);
+			ImagePlus imp = WindowManager.getImage( idList[ i ] );
 			imgList.add( imp );
 			spimData = load( imp, converterSetups, sources, setup_id_offset );
-			if( spimData != null )
+			if ( spimData != null )
 				cache = ( ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader() ).getCacheControl();
-			
+
 			setup_id_offset += imp.getNChannels();
 		}
 
@@ -121,7 +122,7 @@ public class OpenImagePlusPlugIn implements Command
 		vg.setFusedEnabled( true );
 
 		int channelOffset = 0;
-		for( ImagePlus imp : imgList )
+		for ( ImagePlus imp : imgList )
 		{
 			if ( imp.isComposite() )
 				transferChannelSettings( channelOffset, ( CompositeImage ) imp, sa, vg );
@@ -132,7 +133,7 @@ public class OpenImagePlusPlugIn implements Command
 		}
 	}
 
-	protected AbstractSpimData< ? > load( ImagePlus imp, ArrayList< ConverterSetup > converterSetups, ArrayList< SourceAndConverter< ? >> sources, 
+	protected AbstractSpimData< ? > load( ImagePlus imp, ArrayList< ConverterSetup > converterSetups, ArrayList< SourceAndConverter< ? > > sources,
 			int setup_id_offset )
 	{
 		// check the image type
@@ -238,7 +239,7 @@ public class OpenImagePlusPlugIn implements Command
 			for ( int s = 0; s < numSetups; ++s )
 				registrations.add( new ViewRegistration( t, setup_id_offset + s, sourceTransform ) );
 
-		final File basePath = new File(".");
+		final File basePath = new File( "." );
 		final AbstractSpimData< ? > spimData = new SpimDataMinimal( basePath, seq, new ViewRegistrations( registrations ) );
 		WrapBasicImgLoader.wrapImgLoaderIfNecessary( spimData );
 		BigDataViewer.initSetups( spimData, converterSetups, sources );
