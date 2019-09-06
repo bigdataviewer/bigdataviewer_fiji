@@ -98,6 +98,9 @@
 		<license.licenseName>gpl_v3</license.licenseName>
 		<license.copyrightOwners>BigDataViewer developers.</license.copyrightOwners>
 
+		<imglib2.version>5.8.0</imglib2.version>
+		<bigdataviewer-core.version>8.0.0</bigdataviewer-core.version>
+
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>deploy-to-scijava</releaseProfiles>
 	</properties>

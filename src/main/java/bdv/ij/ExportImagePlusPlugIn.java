@@ -14,16 +14,17 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 
+import net.imglib2.util.Intervals;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
 import bdv.export.ExportMipmapInfo;
+import bdv.export.ExportScalePyramid.AfterEachPlane;
+import bdv.export.ExportScalePyramid.LoopbackHeuristic;
 import bdv.export.ProgressWriter;
 import bdv.export.ProposeMipmaps;
 import bdv.export.SubTaskProgressWriter;
 import bdv.export.WriteSequenceToHdf5;
-import bdv.export.WriteSequenceToHdf5.AfterEachPlane;
-import bdv.export.WriteSequenceToHdf5.LoopbackHeuristic;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.export.imgloader.ImagePlusImgLoader.MinMaxOption;
 import bdv.ij.util.PluginHelper;
@@ -103,7 +104,7 @@ public class ExportImagePlusPlugIn implements Command
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getNSlices();
-		final FinalDimensions size = new FinalDimensions( new int[] { w, h, d } );
+		final FinalDimensions size = new FinalDimensions( w, h, d );
 
 		// propose reasonable mipmap settings
 		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps( new BasicViewSetup( 0, "", size, voxelSize ) );
@@ -177,7 +178,7 @@ public class ExportImagePlusPlugIn implements Command
 				if ( previousLevel < 0 )
 					return false;
 
-				if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+				if ( Intervals.numElements( factorsToOriginalImg ) / Intervals.numElements( factorsToPreviousLevel ) >= 8 )
 					return true;
 
 				if ( isVirtual )
