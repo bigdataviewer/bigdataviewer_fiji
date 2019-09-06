@@ -35,6 +35,7 @@ import net.imglib2.realtransform.AffineTransform3D;
 import spim.vecmath.Point3f;
 import spimopener.SPIMExperiment;
 
+@Deprecated
 public class SpimRegistrationSequence
 {
 	private final SequenceDescriptionMinimal sequenceDescription;

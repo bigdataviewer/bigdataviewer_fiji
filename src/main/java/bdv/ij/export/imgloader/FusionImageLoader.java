@@ -45,6 +45,7 @@ import net.imglib2.view.Views;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class FusionImageLoader< T extends RealType< T > > implements ImgLoader
 {
 	private final String pattern;

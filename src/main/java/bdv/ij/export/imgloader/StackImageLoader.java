@@ -18,6 +18,7 @@ import net.imglib2.type.numeric.integer.UnsignedShortType;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class StackImageLoader extends LegacyBasicImgLoaderWrapper< UnsignedShortType, LegacyStackImageLoader >
 {
 	public StackImageLoader( final HashMap< ViewId, String > filenames, final boolean useImageJOpener )
