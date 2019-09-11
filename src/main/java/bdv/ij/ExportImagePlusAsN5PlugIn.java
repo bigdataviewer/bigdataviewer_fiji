@@ -41,9 +41,13 @@ import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.util.Intervals;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.janelia.saalfeldlab.n5.Bzip2Compression;
 import org.janelia.saalfeldlab.n5.Compression;
+import org.janelia.saalfeldlab.n5.GzipCompression;
 import org.janelia.saalfeldlab.n5.Lz4Compression;
 import org.janelia.saalfeldlab.n5.RawCompression;
+import org.janelia.saalfeldlab.n5.XzCompression;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
@@ -243,8 +247,10 @@ public class ExportImagePlusAsN5PlugIn implements Command
 
 		try
 		{
-			Compression compression = params.deflate ? new Lz4Compression() : new RawCompression();
-			WriteSequenceToN5.writeN5File( seq, perSetupExportMipmapInfo, compression, params.n5File, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+			WriteSequenceToN5.writeN5File( seq, perSetupExportMipmapInfo,
+					params.compression, params.n5File,
+					loopbackHeuristic, afterEachPlane, numCellCreatorThreads,
+					new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 
 			// write xml sequence description
 			final N5ImageLoader n5Loader = new N5ImageLoader( params.n5File, null );
@@ -280,29 +286,31 @@ public class ExportImagePlusAsN5PlugIn implements Command
 
 		final File n5File;
 
-		final boolean deflate;
+		final Compression compression;
 
 		public Parameters(
 				final boolean setMipmapManual, final int[][] resolutions, final int[][] subdivisions,
 				final File seqFile, final File n5File,
-				final boolean deflate )
+				final Compression compression )
 		{
 			this.setMipmapManual = setMipmapManual;
 			this.resolutions = resolutions;
 			this.subdivisions = subdivisions;
 			this.seqFile = seqFile;
 			this.n5File = n5File;
-			this.deflate = deflate;
+			this.compression = compression;
 		}
 	}
 
 	static boolean lastSetMipmapManual = false;
 
-	static String lastSubsampling = "{1,1,1}, {2,2,1}, {4,4,2}";
+	static String lastSubsampling = "";
 
-	static String lastChunkSizes = "{32,32,4}, {16,16,8}, {8,8,8}";
+	static String lastChunkSizes = "";
 
-	static boolean lastDeflate = true;
+	static int lastCompressionChoice = 0;
+
+	static boolean lastCompressionDefaultSettings = true;
 
 	static String lastExportPath = "./export.xml";
 
@@ -320,7 +328,9 @@ public class ExportImagePlusAsN5PlugIn implements Command
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
 
 			gd.addMessage( "" );
-			gd.addCheckbox( "use_deflate_compression", lastDeflate );
+			final String[] compressionChoices = new String[] { "raw (no compression)", "bzip", "gzip", "lz4", "xz" };
+			gd.addChoice( "compression", compressionChoices, compressionChoices[ lastCompressionChoice ] );
+			gd.addCheckbox( "default settings", lastCompressionDefaultSettings );
 
 			gd.addMessage( "" );
 			PluginHelper.addSaveAsFileField( gd, "Export_path", lastExportPath, 25 );
@@ -331,6 +341,7 @@ public class ExportImagePlusAsN5PlugIn implements Command
 				gd.getNextBoolean();
 				gd.getNextString();
 				gd.getNextString();
+				gd.getNextChoiceIndex();
 				gd.getNextBoolean();
 				gd.getNextString();
 				if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cManualMipmap )
@@ -362,7 +373,8 @@ public class ExportImagePlusAsN5PlugIn implements Command
 			lastSetMipmapManual = gd.getNextBoolean();
 			lastSubsampling = gd.getNextString();
 			lastChunkSizes = gd.getNextString();
-			lastDeflate = gd.getNextBoolean();
+			lastCompressionChoice = gd.getNextChoiceIndex();
+			lastCompressionDefaultSettings = gd.getNextBoolean();
 			lastExportPath = gd.getNextString();
 
 			// parse mipmap resolutions and cell sizes
@@ -397,7 +409,154 @@ public class ExportImagePlusAsN5PlugIn implements Command
 			final String n5Filename = seqFilename.substring( 0, seqFilename.length() - 4 ) + ".n5";
 			final File n5File = new File( n5Filename );
 
-			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, seqFile, n5File, lastDeflate );
+			final Compression compression;
+			switch ( lastCompressionChoice )
+			{
+			default:
+			case 0: // raw (no compression)
+				compression = new RawCompression();
+				break;
+			case 1: // bzip
+				compression = lastCompressionDefaultSettings
+						? new Bzip2Compression()
+						: getBzip2Settings();
+				break;
+			case 2: // gzip
+				compression = lastCompressionDefaultSettings
+						? new GzipCompression()
+						: getGzipSettings();
+				break;
+			case 3:// lz4
+				compression = lastCompressionDefaultSettings
+						? new Lz4Compression()
+						: getLz4Settings();
+				break;
+			case 4:// xz" };
+				compression = lastCompressionDefaultSettings
+						? new XzCompression()
+						: getXzSettings();
+				break;
+			}
+			if ( compression == null )
+				return null;
+
+			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, seqFile, n5File, compression );
 		}
 	}
+
+	static int lastBzip2BlockSize = BZip2CompressorOutputStream.MAX_BLOCKSIZE;
+
+	protected Bzip2Compression getBzip2Settings()
+	{
+		while ( true )
+		{
+			final GenericDialogPlus gd = new GenericDialogPlus( "Bzip2 compression settings" );
+			gd.addNumericField(
+					String.format( "block size (%d-%d)",
+							BZip2CompressorOutputStream.MIN_BLOCKSIZE,
+							BZip2CompressorOutputStream.MAX_BLOCKSIZE ),
+					lastBzip2BlockSize, 0 );
+			gd.addMessage( "as 100k units" );
+
+			gd.showDialog();
+			if ( gd.wasCanceled() )
+				return null;
+
+			lastBzip2BlockSize = ( int ) gd.getNextNumber();
+			if ( lastBzip2BlockSize < BZip2CompressorOutputStream.MIN_BLOCKSIZE || lastBzip2BlockSize > BZip2CompressorOutputStream.MAX_BLOCKSIZE )
+			{
+				IJ.showMessage(
+						String.format( "Block size must be in range [%d, %d]",
+								BZip2CompressorOutputStream.MIN_BLOCKSIZE,
+								BZip2CompressorOutputStream.MAX_BLOCKSIZE ) );
+				continue;
+			}
+			return new Bzip2Compression( lastBzip2BlockSize );
+		}
+	}
+
+	static int lastGzipLevel = 6;
+
+	static boolean lastGzipUseZlib = false;
+
+	protected GzipCompression getGzipSettings()
+	{
+		while ( true )
+		{
+			final GenericDialogPlus gd = new GenericDialogPlus( "Gzip compression settings" );
+			gd.addNumericField( "level (0-9)", lastGzipLevel, 0 );
+			gd.addCheckbox( "use Zlib", lastGzipUseZlib );
+
+			gd.showDialog();
+			if ( gd.wasCanceled() )
+				return null;
+
+			lastGzipLevel = ( int ) gd.getNextNumber();
+			lastGzipUseZlib = gd.getNextBoolean();
+			if ( lastGzipLevel < 0 || lastGzipLevel > 9 )
+			{
+				IJ.showMessage( "Level must be in range [0, 9]" );
+				continue;
+			}
+			return new GzipCompression( lastGzipLevel, lastGzipUseZlib );
+		}
+	}
+
+	static int lastLz4BlockSize = 1 << 16;
+
+	protected Lz4Compression getLz4Settings()
+	{
+		final int COMPRESSION_LEVEL_BASE = 10;
+		final int MIN_BLOCK_SIZE = 64;
+		final int MAX_BLOCK_SIZE = 1 << (COMPRESSION_LEVEL_BASE + 0x0F);
+
+		while ( true )
+		{
+			final GenericDialogPlus gd = new GenericDialogPlus( "LZ4 compression settings" );
+			gd.addNumericField(
+					String.format( "block size (%d-%d)",
+							MIN_BLOCK_SIZE,
+							MAX_BLOCK_SIZE ),
+					lastLz4BlockSize, 0, 8, null );
+
+			gd.showDialog();
+			if ( gd.wasCanceled() )
+				return null;
+
+			lastLz4BlockSize = ( int ) gd.getNextNumber();
+			if ( lastLz4BlockSize < MIN_BLOCK_SIZE || lastLz4BlockSize > MAX_BLOCK_SIZE )
+			{
+				IJ.showMessage( String.format( "Block size must be in range [%d, %d]",
+						MIN_BLOCK_SIZE,
+						MAX_BLOCK_SIZE ) );
+				continue;
+			}
+			return new Lz4Compression( lastLz4BlockSize );
+		}
+	}
+
+	static int lastXzLevel = 6;
+
+	protected XzCompression getXzSettings()
+	{
+		while ( true )
+		{
+			final GenericDialogPlus gd = new GenericDialogPlus( "XZ compression settings" );
+			gd.addNumericField( "level (0-9)", lastXzLevel, 0 );
+			gd.addMessage( "LZMA2 preset level" );
+
+			gd.showDialog();
+			if ( gd.wasCanceled() )
+				return null;
+
+			lastXzLevel = ( int ) gd.getNextNumber();
+			if ( lastXzLevel < 0 || lastXzLevel > 9 )
+			{
+				IJ.showMessage( "Level must be in range [0, 9]" );
+				continue;
+			}
+			return new XzCompression( lastXzLevel );
+		}
+	}
+
 }
