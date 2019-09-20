@@ -117,7 +117,10 @@ public class ExportImagePlusAsN5PlugIn implements Command
 		final FinalDimensions size = new FinalDimensions( w, h, d );
 
 		// propose reasonable mipmap settings
-		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps( new BasicViewSetup( 0, "", size, voxelSize ) );
+		final int maxNumElements = 64 * 64 * 64;
+		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps(
+				new BasicViewSetup( 0, "", size, voxelSize ),
+				maxNumElements );
 
 		// show dialog to get output paths, resolutions, subdivisions, min-max option
 		final Parameters params = getParameters( autoMipmapSettings );
