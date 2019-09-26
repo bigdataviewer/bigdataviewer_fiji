@@ -92,13 +92,6 @@ public class ExportImagePlusPlugIn implements Command
 			return;
 		}
 
-		// check the image dimensionality
-		if ( imp.getNDimensions() < 3 )
-		{
-			IJ.showMessage( "Image must be at least 3-dimensional!" );
-			return;
-		}
-
 		// get calibration and image size
 		final double pw = imp.getCalibration().pixelWidth;
 		final double ph = imp.getCalibration().pixelHeight;
