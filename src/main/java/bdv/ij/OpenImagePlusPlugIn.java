@@ -163,13 +163,6 @@ public class OpenImagePlusPlugIn implements Command
 			return null;
 		}
 
-		// check the image dimensionality
-		if ( imp.getNDimensions() < 3 )
-		{
-			IJ.showMessage( imp.getShortTitle() + ": Image must be at least 3-dimensional!" );
-			return null;
-		}
-
 		// get calibration and image size
 		final double pw = imp.getCalibration().pixelWidth;
 		final double ph = imp.getCalibration().pixelHeight;
