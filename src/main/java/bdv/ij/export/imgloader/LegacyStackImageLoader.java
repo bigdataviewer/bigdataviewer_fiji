@@ -34,6 +34,7 @@ import net.imglib2.type.numeric.integer.UnsignedShortType;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class LegacyStackImageLoader implements LegacyBasicImgLoader< UnsignedShortType >
 {
 	private final ImgOpener opener;

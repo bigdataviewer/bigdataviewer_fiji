@@ -25,6 +25,7 @@ import spimopener.SPIMExperiment;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class HuiskenImageLoader implements BasicImgLoader
 {
 	private final File expFile;

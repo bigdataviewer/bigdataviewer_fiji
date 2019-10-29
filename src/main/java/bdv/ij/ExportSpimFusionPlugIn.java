@@ -68,6 +68,7 @@ import mpicbg.spim.io.SPIMConfiguration;
 import mpicbg.spim.io.TextFileAccess;
 import spimopener.SPIMExperiment;
 
+@Deprecated
 @Plugin(type = Command.class,
 	menuPath = "Plugins>BigDataViewer>Deprecated>Export Fused Sequence as XML/HDF5")
 public class ExportSpimFusionPlugIn implements Command

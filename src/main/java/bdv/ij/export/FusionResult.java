@@ -20,6 +20,7 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.Dimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 
+@Deprecated
 public class FusionResult
 {
 	private final SequenceDescriptionMinimal desc;
