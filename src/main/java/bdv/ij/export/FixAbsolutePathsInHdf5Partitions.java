@@ -29,6 +29,7 @@ import mpicbg.spim.data.generic.sequence.BasicViewSetup;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class FixAbsolutePathsInHdf5Partitions
 {
 	public static void fix( final String xmlFilename ) throws SpimDataException, IOException

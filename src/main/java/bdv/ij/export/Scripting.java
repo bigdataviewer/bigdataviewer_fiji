@@ -17,6 +17,7 @@ import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.io.ConfigurationParserException;
 import net.imglib2.realtransform.AffineTransform3D;
 
+@Deprecated
 public class Scripting
 {
 	/**
@@ -163,6 +164,7 @@ public class Scripting
 	 *            is used to generate paths for the partitions.
 	 * @return list of partitions.
 	 */
+	@Deprecated
 	public static ArrayList< Partition > split(
 			final SetupAggregator aggregator,
 			final int timepointsPerPartition,

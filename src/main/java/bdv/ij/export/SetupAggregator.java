@@ -34,6 +34,7 @@ import net.imglib2.img.cell.CellImg;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class SetupAggregator
 {
 	/**
@@ -80,7 +81,7 @@ public class SetupAggregator
 	/**
 	 * Add a new {@link BasicViewSetup} to the aggregator.
 	 *
-	 * Adds a setup of the given source {@link SpimRegistrationSequence} to the
+	 * Adds a setup of the given source {@link AbstractSequenceDescription} to the
 	 * aggregator. A reference to the source sequence is kept and the source
 	 * {@link ViewRegistrations} are copied. In the viewer format, every image
 	 * is stored in multiple resolutions. The resolutions are described as int[]
@@ -181,6 +182,7 @@ public class SetupAggregator
 	 *            "{32,32,32}, {16,16,8}, {8,8,8}" where each "{...}"
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetup( final SpimRegistrationSequence sequence, final int setupIndex, final String resolutionsString, final String subdivisionsString )
 	{
 		final AbstractSequenceDescription< ?, ?, ? > desc = sequence.getSequenceDescription();
@@ -222,6 +224,7 @@ public class SetupAggregator
 	 *            the set of subdivisions to store. each nested int[] array
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetup( final SpimRegistrationSequence sequence, final int setupIndex, final int[][] resolutions, final int[][] subdivisions )
 	{
 		final AbstractSequenceDescription< ?, ?, ? > desc = sequence.getSequenceDescription();
@@ -257,6 +260,7 @@ public class SetupAggregator
 	 *            "{32,32,32}, {16,16,8}, {8,8,8}" where each "{...}"
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetups( final SpimRegistrationSequence sequence, final String resolutionsString, final String subdivisionsString )
 	{
 		for ( int s = 0; s < sequence.getSequenceDescription().getViewSetups().size(); ++s )
@@ -286,6 +290,7 @@ public class SetupAggregator
 	 *            the set of subdivisions to store. each nested int[] array
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetups( final SpimRegistrationSequence sequence, final int[][] resolutions, final int[][] subdivisions )
 	{
 		for ( int s = 0; s < sequence.getSequenceDescription().getViewSetups().size(); ++s )
@@ -317,6 +322,7 @@ public class SetupAggregator
 	 *            "{32,32,32}, {16,16,8}, {8,8,8}" where each "{...}"
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetups( final FusionResult fusionResult, final String resolutionsString, final String subdivisionsString )
 	{
 		final int[][] resolutions = PluginHelper.parseResolutionsString( resolutionsString );
@@ -354,6 +360,7 @@ public class SetupAggregator
 	 *            the set of subdivisions to store. each nested int[] array
 	 *            defines one subdivision.
 	 */
+	@Deprecated
 	public void addSetups( final FusionResult fusionResult, final int[][] resolutions, final int[][] subdivisions )
 	{
 		if ( resolutions.length != subdivisions.length )

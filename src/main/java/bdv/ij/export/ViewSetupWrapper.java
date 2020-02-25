@@ -13,6 +13,7 @@ import mpicbg.spim.data.sequence.ViewSetup;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class ViewSetupWrapper extends BasicViewSetup
 {
 	private final AbstractSequenceDescription< ?, ?, ? > sourceSequence;
