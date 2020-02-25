@@ -1,9 +1,13 @@
 package bdv.ij;
 
+import bdv.viewer.ConverterSetups;
+import bdv.viewer.SynchronizedViewerState;
+import bdv.viewer.ViewerState;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import java.util.List;
 import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
@@ -21,11 +25,9 @@ import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.WrapBasicImgLoader;
 import bdv.tools.brightness.ConverterSetup;
-import bdv.tools.brightness.SetupAssignments;
 import bdv.viewer.DisplayMode;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
-import bdv.viewer.VisibilityAndGrouping;
 import ij.CompositeImage;
 import ij.IJ;
 import ij.ImageJ;
@@ -132,18 +134,19 @@ public class OpenImagePlusPlugIn implements Command
 					nTimepoints, cache,
 					"BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
 
-			final SetupAssignments sa = bdv.getSetupAssignments();
-			final VisibilityAndGrouping vg = bdv.getViewer().getVisibilityAndGrouping();
-
-			int channelOffset = 0;
-			int numActiveChannels = 0;
-			for ( ImagePlus imp : imgList )
+			final SynchronizedViewerState state = bdv.getViewer().state();
+			synchronized ( state )
 			{
-				numActiveChannels += transferChannelVisibility( channelOffset, imp,vg );
-				transferChannelSettings( channelOffset, imp, sa );
-				channelOffset += imp.getNChannels();
+				int channelOffset = 0;
+				int numActiveChannels = 0;
+				for ( ImagePlus imp : imgList )
+				{
+					numActiveChannels += transferChannelVisibility( channelOffset, imp, state );
+					transferChannelSettings( channelOffset, imp, state, bdv.getConverterSetups() );
+					channelOffset += imp.getNChannels();
+				}
+				state.setDisplayMode( numActiveChannels > 1 ? DisplayMode.FUSED : DisplayMode.SINGLE );
 			}
-			vg.setDisplayMode( numActiveChannels > 1 ? DisplayMode.FUSED : DisplayMode.SINGLE );
 		}
 	}
 
@@ -257,19 +260,20 @@ public class OpenImagePlusPlugIn implements Command
 	/**
 	 * @return number of setups that were set active.
 	 */
-	protected int transferChannelVisibility( int channelOffset, final ImagePlus imp, final VisibilityAndGrouping visibility )
+	protected int transferChannelVisibility( int channelOffset, final ImagePlus imp, final ViewerState state )
 	{
 		final int nChannels = imp.getNChannels();
 		final CompositeImage ci = imp.isComposite() ? ( CompositeImage ) imp : null;
+		final List< SourceAndConverter< ? > > sources = state.getSources();
 		if ( ci != null && ci.getCompositeMode() == IJ.COMPOSITE )
 		{
 			final boolean[] activeChannels = ci.getActiveChannels();
 			int numActiveChannels = 0;
-			for ( int i = 0; i < activeChannels.length; ++i )
+			for ( int i = 0; i < Math.min( activeChannels.length, nChannels ); ++i )
 			{
-				final int setup = channelOffset + i;
-				visibility.setSourceActive( setup, activeChannels[ i ] );
-				visibility.setCurrentSource( setup );
+				final SourceAndConverter< ? > source = sources.get( channelOffset + i );
+				state.setSourceActive( source, activeChannels[ i ] );
+				state.setCurrentSource( source );
 				numActiveChannels += activeChannels[ i ] ? 1 : 0;
 			}
 			return numActiveChannels;
@@ -278,16 +282,17 @@ public class OpenImagePlusPlugIn implements Command
 		{
 			final int activeChannel = imp.getChannel() - 1;
 			for ( int i = 0; i < nChannels; ++i )
-				visibility.setSourceActive( channelOffset + i, i == activeChannel );
-			visibility.setCurrentSource( channelOffset + activeChannel );
+				state.setSourceActive( sources.get( channelOffset + i ), i == activeChannel );
+			state.setCurrentSource( sources.get( channelOffset + activeChannel ) );
 			return 1;
 		}
 	}
 
-	protected void transferChannelSettings( int channelOffset, final ImagePlus imp, final SetupAssignments setupAssignments )
+	protected void transferChannelSettings( int channelOffset, final ImagePlus imp, final ViewerState state, final ConverterSetups converterSetups )
 	{
 		final int nChannels = imp.getNChannels();
 		final CompositeImage ci = imp.isComposite() ? ( CompositeImage ) imp : null;
+		final List< SourceAndConverter< ? > > sources = state.getSources();
 		if ( ci != null )
 		{
 			final int mode = ci.getCompositeMode();
@@ -295,7 +300,7 @@ public class OpenImagePlusPlugIn implements Command
 			for ( int c = 0; c < nChannels; ++c )
 			{
 				final LUT lut = ci.getChannelLut( c + 1 );
-				final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + c );
+				final ConverterSetup setup = converterSetups.getConverterSetup( sources.get( channelOffset + c ) );
 				if ( transferColor )
 					setup.setColor( new ARGBType( lut.getRGB( 255 ) ) );
 				setup.setDisplayRange( lut.min, lut.max );
@@ -307,7 +312,7 @@ public class OpenImagePlusPlugIn implements Command
 			final double displayRangeMax = imp.getDisplayRangeMax();
 			for ( int i = 0; i < nChannels; ++i )
 			{
-				final ConverterSetup setup = setupAssignments.getConverterSetups().get( channelOffset + i );
+				final ConverterSetup setup = converterSetups.getConverterSetup( sources.get( channelOffset + i ) );
 				final LUT[] luts = imp.getLuts();
 				if ( luts.length != 0 )
 					setup.setColor( new ARGBType( luts[ 0 ].getRGB( 255 ) ) );
