@@ -112,13 +112,16 @@ public class OpenImagePlusPlugIn implements Command
 		final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
 		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList<>();
 
-		CacheControl.CacheControls cache = new CacheControl.CacheControls();
+		final CacheControl.CacheControls cache = new CacheControl.CacheControls();
 		int nTimepoints = 1;
 		int setup_id_offset = 0;
-		ArrayList< ImagePlus > imgList = new ArrayList<>();
+		final ArrayList< ImagePlus > imgList = new ArrayList<>();
+		boolean is2D = true;
 		for ( ImagePlus imp : inputImgList )
 		{
-			AbstractSpimData< ? > spimData = load( imp, converterSetups, sources, setup_id_offset );
+			if ( imp.getNSlices() > 1 )
+				is2D = false;
+			final AbstractSpimData< ? > spimData = load( imp, converterSetups, sources, setup_id_offset );
 			if ( spimData != null )
 			{
 				imgList.add( imp );
@@ -132,7 +135,8 @@ public class OpenImagePlusPlugIn implements Command
 		{
 			final BigDataViewer bdv = BigDataViewer.open( converterSetups, sources,
 					nTimepoints, cache,
-					"BigDataViewer", new ProgressWriterIJ(), ViewerOptions.options() );
+					"BigDataViewer", new ProgressWriterIJ(),
+					ViewerOptions.options().is2D( is2D ) );
 
 			final SynchronizedViewerState state = bdv.getViewer().state();
 			synchronized ( state )
