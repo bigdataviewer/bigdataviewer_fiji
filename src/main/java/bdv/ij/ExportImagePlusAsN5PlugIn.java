@@ -84,8 +84,9 @@ public class ExportImagePlusAsN5PlugIn implements Command
 	public static void main( final String[] args )
 	{
 		new ImageJ();
-		final ImagePlus imp = IJ.openImage( "/Users/pietzsch/workspace/data/confocal-series.tif" );
-		imp.show();
+		IJ.run("Confocal Series (2.2MB)");
+		//final ImagePlus imp = IJ.openImage( "/Users/tischer/Desktop/Desktop/mri-stack-big.tif" );
+		//imp.show();
 		new ExportImagePlusAsN5PlugIn().run();
 	}
 

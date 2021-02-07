@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: sc.fiji:bigdataviewer-core:10.2.1-TISCHI">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/sc/fiji/bigdataviewer-core/10.2.1-TISCHI/bigdataviewer-core-10.2.1-TISCHI.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/sc/fiji/bigdataviewer-core/10.2.1-TISCHI/bigdataviewer-core-10.2.1-TISCHI-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/sc/fiji/bigdataviewer-core/10.2.1-TISCHI/bigdataviewer-core-10.2.1-TISCHI-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

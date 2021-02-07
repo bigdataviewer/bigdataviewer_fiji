@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import bdv.export.*;
 import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
@@ -39,13 +40,8 @@ import net.imglib2.util.Intervals;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
-import bdv.export.ExportMipmapInfo;
 import bdv.export.ExportScalePyramid.AfterEachPlane;
 import bdv.export.ExportScalePyramid.LoopbackHeuristic;
-import bdv.export.ProgressWriter;
-import bdv.export.ProposeMipmaps;
-import bdv.export.SubTaskProgressWriter;
-import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.export.imgloader.ImagePlusImgLoader.MinMaxOption;
 import bdv.ij.util.PluginHelper;
@@ -82,7 +78,10 @@ public class ExportImagePlusPlugIn implements Command
 	public static void main( final String[] args )
 	{
 		new ImageJ();
-		IJ.run("Confocal Series (2.2MB)");
+		//IJ.run("Confocal Series (2.2MB)");
+		final ImagePlus imp = IJ.openImage( "/Users/tischer/Desktop/Desktop/labels-3d-test.tif" );
+		imp.show();
+
 		new ExportImagePlusPlugIn().run();
 	}
 
@@ -243,14 +242,14 @@ public class ExportImagePlusPlugIn implements Command
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progressWriter, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.deflate, partition, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( seq, perSetupExportMipmapInfo, params.downsamplingMethod, params.deflate, partition, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( seq, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
 			partitions = null;
-			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, params.deflate, params.hdf5File, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo,  params.downsamplingMethod, params.deflate, params.hdf5File, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 		}
 
 		// write xml sequence description
@@ -285,6 +284,8 @@ public class ExportImagePlusPlugIn implements Command
 
 		final int[][] subdivisions;
 
+		final DownsampleBlock.DownsamplingMethod downsamplingMethod;
+
 		final File seqFile;
 
 		final File hdf5File;
@@ -305,13 +306,14 @@ public class ExportImagePlusPlugIn implements Command
 
 		public Parameters(
 				final boolean setMipmapManual, final int[][] resolutions, final int[][] subdivisions,
-				final File seqFile, final File hdf5File,
+				DownsampleBlock.DownsamplingMethod downsamplingMethod, final File seqFile, final File hdf5File,
 				final MinMaxOption minMaxOption, final double rangeMin, final double rangeMax, final boolean deflate,
 				final boolean split, final int timepointsPerPartition, final int setupsPerPartition )
 		{
 			this.setMipmapManual = setMipmapManual;
 			this.resolutions = resolutions;
 			this.subdivisions = subdivisions;
+			this.downsamplingMethod = downsamplingMethod;
 			this.seqFile = seqFile;
 			this.hdf5File = hdf5File;
 			this.minMaxOption = minMaxOption;
@@ -329,6 +331,8 @@ public class ExportImagePlusPlugIn implements Command
 	static String lastSubsampling = "{1,1,1}, {2,2,1}, {4,4,2}";
 
 	static String lastChunkSizes = "{32,32,4}, {16,16,8}, {8,8,8}";
+
+	static DownsampleBlock.DownsamplingMethod lastDownsamplingMethod = DownsampleBlock.DownsamplingMethod.Average;
 
 	static int lastMinMaxChoice = 2;
 
@@ -364,6 +368,8 @@ public class ExportImagePlusPlugIn implements Command
 			final TextField tfSubsampling = ( TextField ) gd.getStringFields().lastElement();
 			gd.addStringField( "Hdf5_chunk_sizes", lastChunkSizes, 25 );
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
+			gd.addChoice( "Subsampling_method", new String[]{ DownsampleBlock.DownsamplingMethod.Average.toString(), DownsampleBlock.DownsamplingMethod.CentralPixel.toString() }, lastDownsamplingMethod.toString() );
+			final Choice cDownsamplingMethod = ( Choice ) gd.getChoices().lastElement();
 
 			gd.addMessage( "" );
 			final String[] minMaxChoices = new String[] { "Use ImageJ's current min/max setting", "Compute min/max of the (hyper-)stack", "Use values specified below" };
@@ -402,6 +408,7 @@ public class ExportImagePlusPlugIn implements Command
 					gd.getNextBoolean();
 					gd.getNextString();
 					gd.getNextString();
+					gd.getNextChoice();
 					gd.getNextChoiceIndex();
 					gd.getNextNumber();
 					gd.getNextNumber();
@@ -459,6 +466,7 @@ public class ExportImagePlusPlugIn implements Command
 			lastSetMipmapManual = gd.getNextBoolean();
 			lastSubsampling = gd.getNextString();
 			lastChunkSizes = gd.getNextString();
+			lastDownsamplingMethod = DownsampleBlock.DownsamplingMethod.valueOf( gd.getNextChoice() );
 			lastMinMaxChoice = gd.getNextChoiceIndex();
 			lastMin = gd.getNextNumber();
 			lastMax = gd.getNextNumber();
@@ -508,6 +516,6 @@ public class ExportImagePlusPlugIn implements Command
 			final String hdf5Filename = seqFilename.substring( 0, seqFilename.length() - 4 ) + ".h5";
 			final File hdf5File = new File( hdf5Filename );
 
-			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, seqFile, hdf5File, minMaxOption, lastMin, lastMax, lastDeflate, lastSplit, lastTimepointsPerPartition, lastSetupsPerPartition );		}
+			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, lastDownsamplingMethod, seqFile, hdf5File, minMaxOption, lastMin, lastMax, lastDeflate, lastSplit, lastTimepointsPerPartition, lastSetupsPerPartition );		}
 	}
 }
