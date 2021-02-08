@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import bdv.export.DownsampleBlock;
 import bdv.export.ExportMipmapInfo;
 import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.util.PluginHelper;
@@ -233,7 +234,7 @@ public class Scripting
 			if ( index >= 0 && index < partitions.size() )
 			{
 				final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, deflate, partitions.get( index ), null, null, numCellCreatorThreads, null );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( spimData.getSequenceDescription(), perSetupMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, deflate, partitions.get( index ), null, null, numCellCreatorThreads, null );
 			}
 		}
 

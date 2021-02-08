@@ -10,3 +10,8 @@
 .settings
 /target
 /samples
+
+# IntelliJ
+.idea/
+*.iml
+
