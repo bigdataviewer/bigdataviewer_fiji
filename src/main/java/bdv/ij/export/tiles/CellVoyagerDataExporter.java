@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import bdv.export.DownsampleBlock;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -336,7 +337,7 @@ public class CellVoyagerDataExporter
 		 */
 
 		final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
-		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions, chunks, true, hdf5File, null, null, numCellCreatorThreads, progressWriter );
+		WriteSequenceToHdf5.writeHdf5File( sequenceDescriptionHDF5, resolutions,  chunks, DownsampleBlock.DownsamplingMethod.Average, true, hdf5File, null, null, numCellCreatorThreads, progressWriter );
 
 		/*
 		 * write XML sequence description

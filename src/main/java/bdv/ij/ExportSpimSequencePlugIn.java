@@ -36,14 +36,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import bdv.export.*;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
-import bdv.export.ExportMipmapInfo;
-import bdv.export.ProgressWriter;
-import bdv.export.ProposeMipmaps;
-import bdv.export.SubTaskProgressWriter;
-import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.export.SpimRegistrationSequence;
 import bdv.ij.util.PluginHelper;
 import bdv.ij.util.ProgressWriterIJ;
@@ -115,14 +111,14 @@ public class ExportSpimSequencePlugIn implements Command
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progress, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, params.deflate, partition, null, null, numCellCreatorThreads, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, params.deflate, partition, null, null, numCellCreatorThreads, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( desc, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
 			partitions = null;
-			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, params.deflate, params.hdf5File, null, null, numCellCreatorThreads, new SubTaskProgressWriter( progress, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, params.deflate, params.hdf5File, null, null, numCellCreatorThreads, new SubTaskProgressWriter( progress, 0, 0.95 ) );
 		}
 
 		final Hdf5ImageLoader loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, false );

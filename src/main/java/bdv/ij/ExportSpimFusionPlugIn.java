@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import bdv.export.*;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
@@ -47,11 +48,6 @@ import net.imglib2.util.ValuePair;
 import org.scijava.command.Command;
 import org.scijava.plugin.Plugin;
 
-import bdv.export.ExportMipmapInfo;
-import bdv.export.ProgressWriter;
-import bdv.export.ProposeMipmaps;
-import bdv.export.SubTaskProgressWriter;
-import bdv.export.WriteSequenceToHdf5;
 import bdv.ij.export.FusionResult;
 import bdv.ij.export.SpimRegistrationSequence;
 import bdv.ij.export.ViewSetupWrapper;
@@ -314,7 +310,7 @@ public class ExportSpimFusionPlugIn implements Command
 		{
 			final SubTaskProgressWriter subtaskProgress = new SubTaskProgressWriter( progress, complete, complete + completionStep );
 			final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
-			WriteSequenceToHdf5.writeHdf5PartitionFile( fusionSeq, perSetupExportMipmapInfo, params.deflate, partition, null, null, numCellCreatorThreads, subtaskProgress );
+			WriteSequenceToHdf5.writeHdf5PartitionFile( fusionSeq, perSetupExportMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, params.deflate, partition, null, null, numCellCreatorThreads, subtaskProgress );
 			complete += completionStep;
 		}
 
@@ -367,13 +363,13 @@ public class ExportSpimFusionPlugIn implements Command
 			{
 				final Partition partition = partitions.get( i );
 				final ProgressWriter p = new SubTaskProgressWriter( progress, 0, 0.95 * i / partitions.size() );
-				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, params.deflate, partition, null, null, numCellCreatorThreads, p );
+				WriteSequenceToHdf5.writeHdf5PartitionFile( desc, perSetupExportMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, params.deflate, partition, null, null, numCellCreatorThreads, p );
 			}
 			WriteSequenceToHdf5.writeHdf5PartitionLinkFile( desc, perSetupExportMipmapInfo, partitions, params.hdf5File );
 		}
 		else
 		{
-			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, params.deflate, params.hdf5File, null, null, numCellCreatorThreads, new SubTaskProgressWriter( progress, 0, 0.95 ) );
+			WriteSequenceToHdf5.writeHdf5File( desc, perSetupExportMipmapInfo, DownsampleBlock.DownsamplingMethod.Average, params.deflate, params.hdf5File, null, null, numCellCreatorThreads, new SubTaskProgressWriter( progress, 0, 0.95 ) );
 		}
 
 		// write xml file

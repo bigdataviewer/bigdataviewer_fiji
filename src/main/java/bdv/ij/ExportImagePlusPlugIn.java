@@ -368,8 +368,7 @@ public class ExportImagePlusPlugIn implements Command
 			final TextField tfSubsampling = ( TextField ) gd.getStringFields().lastElement();
 			gd.addStringField( "Hdf5_chunk_sizes", lastChunkSizes, 25 );
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
-			gd.addChoice( "Subsampling_method", new String[]{ DownsampleBlock.DownsamplingMethod.Average.toString(), DownsampleBlock.DownsamplingMethod.CentralPixel.toString() }, lastDownsamplingMethod.toString() );
-			final Choice cDownsamplingMethod = ( Choice ) gd.getChoices().lastElement();
+			gd.addChoice( "Subsampling_method", new String[]{ DownsampleBlock.DownsamplingMethod.Average.toString(), DownsampleBlock.DownsamplingMethod.Mode.toString(), DownsampleBlock.DownsamplingMethod.Centre.toString() }, lastDownsamplingMethod.toString() );
 
 			gd.addMessage( "" );
 			final String[] minMaxChoices = new String[] { "Use ImageJ's current min/max setting", "Compute min/max of the (hyper-)stack", "Use values specified below" };
