@@ -89,8 +89,8 @@
 		<url>https://github.com/bigdataviewer/bigdataviewer_fiji/issues</url>
 	</issueManagement>
 	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.org/bigdataviewer/bigdataviewer_fiji</url>
+		<system>GitHub Actions</system>
+		<url>https://github.com/bigdataviewer/bigdataviewer_fiji/actions</url>
 	</ciManagement>
 
 	<properties>
@@ -101,7 +101,7 @@
 		<bigdataviewer-core.version>10.2.0</bigdataviewer-core.version>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
-		<releaseProfiles>deploy-to-scijava</releaseProfiles>
+		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 	</properties>
 
 	<repositories>
