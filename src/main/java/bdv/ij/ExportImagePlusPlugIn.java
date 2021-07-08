@@ -254,7 +254,7 @@ public class ExportImagePlusPlugIn implements Command
 		}
 
 		// write xml sequence description
-		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, false );
+		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( params.hdf5File, partitions, null, imgLoader.reportPixelType(), false );
 		final SequenceDescriptionMinimal seqh5 = new SequenceDescriptionMinimal( seq, hdf5Loader );
 
 		final ArrayList< ViewRegistration > registrations = new ArrayList<>();
@@ -330,7 +330,7 @@ public class ExportImagePlusPlugIn implements Command
 
 	static String lastChunkSizes = "{32,32,4}, {16,16,8}, {8,8,8}";
 
-	static int lastMinMaxChoice = 2;
+	static int lastMinMaxChoice = 1;
 
 	static double lastMin = 0;
 
