@@ -176,7 +176,9 @@ public class ExportImagePlusPlugIn implements Command
 
 		Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo;
 		perSetupExportMipmapInfo = new HashMap<>();
-		final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( params.resolutions, params.subdivisions );
+		final ExportMipmapInfo mipmapInfo = params.setMipmapManual
+				? new ExportMipmapInfo( params.resolutions, params.subdivisions )
+				: autoMipmapSettings;
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
 
