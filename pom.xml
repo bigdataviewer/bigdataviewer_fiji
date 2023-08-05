@@ -117,6 +117,7 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>bigdataviewer-core</artifactId>
+			<version>10.2.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.imagej</groupId>
