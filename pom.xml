@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>34.0.0</version>
+		<version>37.0.0</version>
 		<relativePath />
 	</parent>
 
@@ -97,10 +97,6 @@
 		<package-name>bdv.ij</package-name>
 		<license.licenseName>gpl_v3</license.licenseName>
 		<license.copyrightOwners>BigDataViewer developers.</license.copyrightOwners>
-
-		<bigdataviewer-core.version>10.4.6</bigdataviewer-core.version>
-		<imglib2.version>6.1.0</imglib2.version>
-		<imglib2-cache.version>1.0.0-beta-17</imglib2-cache.version>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
