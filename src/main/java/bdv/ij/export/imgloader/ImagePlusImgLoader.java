@@ -57,6 +57,7 @@ import net.imglib2.type.numeric.real.FloatType;
  *
  * @author Tobias Pietzsch &lt;tobias.pietzsch@gmail.com&gt;
  */
+@Deprecated
 public class ImagePlusImgLoader< T extends Type< T > > implements TypedBasicImgLoader< T >
 {
 	public static enum MinMaxOption
