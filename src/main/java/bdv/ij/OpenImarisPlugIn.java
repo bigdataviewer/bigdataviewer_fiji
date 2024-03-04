@@ -43,7 +43,7 @@ import ij.ImageJ;
 import ij.Prefs;
 
 @Plugin(type = Command.class,
-	menuPath = "Plugins>BigDataViewer>Open Imaris (experimental)")
+	menuPath = "Plugins>BigDataViewer>Open Imaris")
 public class OpenImarisPlugIn implements Command
 {
 	static String lastDatasetPath = "";
