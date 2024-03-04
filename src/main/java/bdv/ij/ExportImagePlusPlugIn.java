@@ -55,6 +55,9 @@ import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import bdv.img.imagestack.ImageStackImageLoader;
+import bdv.img.n5.N5ImageLoader;
+import bdv.img.virtualstack.VirtualStackImageLoader;
 import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImageJ;
@@ -63,6 +66,7 @@ import ij.WindowManager;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
+import mpicbg.spim.data.generic.sequence.TypedBasicImgLoader;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
 import mpicbg.spim.data.sequence.Channel;
@@ -139,19 +143,44 @@ public class ExportImagePlusPlugIn implements Command
 		progressWriter.out().println( "starting export..." );
 
 		// create ImgLoader wrapping the image
-		final ImagePlusImgLoader< ? > imgLoader;
-		switch ( imp.getType() )
+		final TypedBasicImgLoader< ? > imgLoader;
+		final Runnable clearCache;
+		final boolean isVirtual = imp.getStack() != null && imp.getStack().isVirtual();
+		if ( isVirtual )
 		{
-		case ImagePlus.GRAY8:
-			imgLoader = ImagePlusImgLoader.createGray8( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
-			break;
-		case ImagePlus.GRAY16:
-			imgLoader = ImagePlusImgLoader.createGray16( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
-			break;
-		case ImagePlus.GRAY32:
-		default:
-			imgLoader = ImagePlusImgLoader.createGray32( imp, params.minMaxOption, params.rangeMin, params.rangeMax );
-			break;
+			final VirtualStackImageLoader< ?, ?, ? > il;
+			switch ( imp.getType() )
+			{
+			case ImagePlus.GRAY8:
+				il = VirtualStackImageLoader.createUnsignedByteInstance( imp );
+				break;
+			case ImagePlus.GRAY16:
+				il = VirtualStackImageLoader.createUnsignedShortInstance( imp );
+				break;
+			case ImagePlus.GRAY32:
+			default:
+				il = VirtualStackImageLoader.createFloatInstance( imp );
+				break;
+			}
+			imgLoader = il;
+			clearCache = il.getCacheControl()::clearCache;
+		}
+		else
+		{
+			switch ( imp.getType() )
+			{
+			case ImagePlus.GRAY8:
+				imgLoader = ImageStackImageLoader.createUnsignedByteInstance( imp );
+				break;
+			case ImagePlus.GRAY16:
+				imgLoader = ImageStackImageLoader.createUnsignedShortInstance( imp );
+				break;
+			case ImagePlus.GRAY32:
+			default:
+				imgLoader = ImageStackImageLoader.createFloatInstance( imp );
+				break;
+			}
+			clearCache = () -> {};
 		}
 
 		final int numTimepoints = imp.getNFrames();
@@ -174,8 +203,7 @@ public class ExportImagePlusPlugIn implements Command
 			timepoints.add( new TimePoint( t ) );
 		final SequenceDescriptionMinimal seq = new SequenceDescriptionMinimal( new TimePoints( timepoints ), setups, imgLoader, null );
 
-		Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo;
-		perSetupExportMipmapInfo = new HashMap<>();
+		final Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo = new HashMap<>();
 		final ExportMipmapInfo mipmapInfo = params.setMipmapManual
 				? new ExportMipmapInfo( params.resolutions, params.subdivisions )
 				: autoMipmapSettings;
@@ -189,7 +217,6 @@ public class ExportImagePlusPlugIn implements Command
 		//   required for all original planes contributing to a "plane of
 		//   blocks" at the current level. If this is more than 1/4 of
 		//   available memory, use the loopback image.
-		final boolean isVirtual = imp.getStack().isVirtual();
 		final long planeSizeInBytes = imp.getWidth() * imp.getHeight() * imp.getBytesPerPixel();
 		final long ijMaxMemory = IJ.maxMemory();
 		final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
@@ -228,7 +255,7 @@ public class ExportImagePlusPlugIn implements Command
 					final long actuallyFree = max - total + free;
 
 					if ( actuallyFree < max / 2 )
-						imgLoader.clearCache();
+						clearCache.run();
 				}
 			}
 
@@ -291,12 +318,6 @@ public class ExportImagePlusPlugIn implements Command
 
 		final File hdf5File;
 
-		final MinMaxOption minMaxOption;
-
-		final double rangeMin;
-
-		final double rangeMax;
-
 		final boolean deflate;
 
 		final boolean split;
@@ -308,7 +329,7 @@ public class ExportImagePlusPlugIn implements Command
 		public Parameters(
 				final boolean setMipmapManual, final int[][] resolutions, final int[][] subdivisions,
 				final File seqFile, final File hdf5File,
-				final MinMaxOption minMaxOption, final double rangeMin, final double rangeMax, final boolean deflate,
+				final boolean deflate,
 				final boolean split, final int timepointsPerPartition, final int setupsPerPartition )
 		{
 			this.setMipmapManual = setMipmapManual;
@@ -316,9 +337,6 @@ public class ExportImagePlusPlugIn implements Command
 			this.subdivisions = subdivisions;
 			this.seqFile = seqFile;
 			this.hdf5File = hdf5File;
-			this.minMaxOption = minMaxOption;
-			this.rangeMin = rangeMin;
-			this.rangeMax = rangeMax;
 			this.deflate = deflate;
 			this.split = split;
 			this.timepointsPerPartition = timepointsPerPartition;
@@ -332,12 +350,6 @@ public class ExportImagePlusPlugIn implements Command
 
 	static String lastChunkSizes = "{32,32,4}, {16,16,8}, {8,8,8}";
 
-	static int lastMinMaxChoice = 2;
-
-	static double lastMin = 0;
-
-	static double lastMax = 65535;
-
 	static boolean lastSplit = false;
 
 	static int lastTimepointsPerPartition = 0;
@@ -350,12 +362,6 @@ public class ExportImagePlusPlugIn implements Command
 
 	protected Parameters getParameters( final double impMin, final double impMax, final ExportMipmapInfo autoMipmapSettings  )
 	{
-		if ( lastMinMaxChoice == 0 ) // use ImageJs...
-		{
-			lastMin = impMin;
-			lastMax = impMax;
-		}
-
 		while ( true )
 		{
 			final GenericDialogPlus gd = new GenericDialogPlus( "Export for BigDataViewer" );
@@ -366,15 +372,6 @@ public class ExportImagePlusPlugIn implements Command
 			final TextField tfSubsampling = ( TextField ) gd.getStringFields().lastElement();
 			gd.addStringField( "Hdf5_chunk_sizes", lastChunkSizes, 25 );
 			final TextField tfChunkSizes = ( TextField ) gd.getStringFields().lastElement();
-
-			gd.addMessage( "" );
-			final String[] minMaxChoices = new String[] { "Use ImageJ's current min/max setting", "Compute min/max of the (hyper-)stack", "Use values specified below" };
-			gd.addChoice( "Value_range", minMaxChoices, minMaxChoices[ lastMinMaxChoice ] );
-			final Choice cMinMaxChoices = (Choice) gd.getChoices().lastElement();
-			gd.addNumericField( "Min", lastMin, 0 );
-			final TextField tfMin = (TextField) gd.getNumericFields().lastElement();
-			gd.addNumericField( "Max", lastMax, 0 );
-			final TextField tfMax = (TextField) gd.getNumericFields().lastElement();
 
 			gd.addMessage( "" );
 			gd.addCheckbox( "split_hdf5", lastSplit );
@@ -390,58 +387,36 @@ public class ExportImagePlusPlugIn implements Command
 			gd.addMessage( "" );
 			PluginHelper.addSaveAsFileField( gd, "Export_path", lastExportPath, 25 );
 
-//			gd.addMessage( "" );
-//			gd.addMessage( "This Plugin is developed by Tobias Pietzsch (pietzsch@mpi-cbg.de)\n" );
-//			Bead_Registration.addHyperLinkListener( ( MultiLineLabel ) gd.getMessage(), "mailto:pietzsch@mpi-cbg.de" );
-
 			final String autoSubsampling = ProposeMipmaps.getArrayString( autoMipmapSettings.getExportResolutions() );
 			final String autoChunkSizes = ProposeMipmaps.getArrayString( autoMipmapSettings.getSubdivisions() );
-			gd.addDialogListener( new DialogListener()
-			{
-				@Override
-				public boolean dialogItemChanged( final GenericDialog dialog, final AWTEvent e )
+			gd.addDialogListener( ( dialog, e ) -> {
+				gd.getNextBoolean();
+				gd.getNextString();
+				gd.getNextString();
+				gd.getNextBoolean();
+				gd.getNextNumber();
+				gd.getNextNumber();
+				gd.getNextBoolean();
+				gd.getNextString();
+				if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cManualMipmap )
 				{
-					gd.getNextBoolean();
-					gd.getNextString();
-					gd.getNextString();
-					gd.getNextChoiceIndex();
-					gd.getNextNumber();
-					gd.getNextNumber();
-					gd.getNextBoolean();
-					gd.getNextNumber();
-					gd.getNextNumber();
-					gd.getNextBoolean();
-					gd.getNextString();
-					if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cMinMaxChoices )
+					final boolean useManual = cManualMipmap.getState();
+					tfSubsampling.setEnabled( useManual );
+					tfChunkSizes.setEnabled( useManual );
+					if ( !useManual )
 					{
-						final boolean enable = cMinMaxChoices.getSelectedIndex() == 2;
-						tfMin.setEnabled( enable );
-						tfMax.setEnabled( enable );
+						tfSubsampling.setText( autoSubsampling );
+						tfChunkSizes.setText( autoChunkSizes );
 					}
-					else if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cManualMipmap )
-					{
-						final boolean useManual = cManualMipmap.getState();
-						tfSubsampling.setEnabled( useManual );
-						tfChunkSizes.setEnabled( useManual );
-						if ( !useManual )
-						{
-							tfSubsampling.setText( autoSubsampling );
-							tfChunkSizes.setText( autoChunkSizes );
-						}
-					}
-					else if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cSplit )
-					{
-						final boolean split = cSplit.getState();
-						tfSplitTimepoints.setEnabled( split );
-						tfSplitSetups.setEnabled( split );
-					}
-					return true;
 				}
+				else if ( e instanceof ItemEvent && e.getID() == ItemEvent.ITEM_STATE_CHANGED && e.getSource() == cSplit )
+				{
+					final boolean split = cSplit.getState();
+					tfSplitTimepoints.setEnabled( split );
+					tfSplitSetups.setEnabled( split );
+				}
+				return true;
 			} );
-
-			final boolean enable = lastMinMaxChoice == 2;
-			tfMin.setEnabled( enable );
-			tfMax.setEnabled( enable );
 
 			tfSubsampling.setEnabled( lastSetMipmapManual );
 			tfChunkSizes.setEnabled( lastSetMipmapManual );
@@ -461,9 +436,6 @@ public class ExportImagePlusPlugIn implements Command
 			lastSetMipmapManual = gd.getNextBoolean();
 			lastSubsampling = gd.getNextString();
 			lastChunkSizes = gd.getNextString();
-			lastMinMaxChoice = gd.getNextChoiceIndex();
-			lastMin = gd.getNextNumber();
-			lastMax = gd.getNextNumber();
 			lastSplit = gd.getNextBoolean();
 			lastTimepointsPerPartition = ( int ) gd.getNextNumber();
 			lastSetupsPerPartition = ( int ) gd.getNextNumber();
@@ -489,14 +461,6 @@ public class ExportImagePlusPlugIn implements Command
 				continue;
 			}
 
-			final MinMaxOption minMaxOption;
-			if ( lastMinMaxChoice == 0 )
-				minMaxOption = MinMaxOption.TAKE_FROM_IMAGEPROCESSOR;
-			else if ( lastMinMaxChoice == 1 )
-				minMaxOption = MinMaxOption.COMPUTE;
-			else
-				minMaxOption = MinMaxOption.SET;
-
 			String seqFilename = lastExportPath;
 			if ( !seqFilename.endsWith( ".xml" ) )
 				seqFilename += ".xml";
@@ -510,6 +474,7 @@ public class ExportImagePlusPlugIn implements Command
 			final String hdf5Filename = seqFilename.substring( 0, seqFilename.length() - 4 ) + ".h5";
 			final File hdf5File = new File( hdf5Filename );
 
-			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, seqFile, hdf5File, minMaxOption, lastMin, lastMax, lastDeflate, lastSplit, lastTimepointsPerPartition, lastSetupsPerPartition );		}
+			return new Parameters( lastSetMipmapManual, resolutions, subdivisions, seqFile, hdf5File, lastDeflate, lastSplit, lastTimepointsPerPartition, lastSetupsPerPartition );
+		}
 	}
 }
