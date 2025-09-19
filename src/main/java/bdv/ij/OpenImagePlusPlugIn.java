@@ -255,7 +255,7 @@ public class OpenImagePlusPlugIn implements Command
 		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
-			final BasicViewSetup setup = new BasicViewSetup( setup_id_offset + s, String.format( imp.getTitle() + " channel %d", s + 1 ), size, voxelSize );
+			final BasicViewSetup setup = new BasicViewSetup( setup_id_offset + s, String.format( imp.getTitle().replace("%", "%%") + " channel %d", s + 1 ), size, voxelSize );
 			setup.setAttribute( new Channel( s + 1 ) );
 			setups.put( setup_id_offset + s, setup );
 		}
